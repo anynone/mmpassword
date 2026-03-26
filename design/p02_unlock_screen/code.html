@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed": "#271900",
+                        "surface-container-high": "#e8e8e8",
+                        "inverse-surface": "#2f3131",
+                        "primary-fixed-dim": "#a0caff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#4a617d",
+                        "surface-dim": "#dadada",
+                        "on-primary-container": "#fdfcff",
+                        "error": "#ba1a1a",
+                        "secondary": "#49607d",
+                        "surface-container": "#eeeeee",
+                        "on-tertiary-fixed-variant": "#5f4100",
+                        "on-secondary-fixed": "#011d36",
+                        "on-error": "#ffffff",
+                        "on-background": "#1a1c1c",
+                        "tertiary": "#7b5500",
+                        "surface-container-low": "#f3f3f3",
+                        "on-error-container": "#93000a",
+                        "surface": "#f9f9f9",
+                        "background": "#f9f9f9",
+                        "tertiary-container": "#9a6c00",
+                        "inverse-primary": "#a0caff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#1a1c1c",
+                        "outline-variant": "#c1c7d2",
+                        "secondary-fixed": "#d2e4ff",
+                        "secondary-fixed-dim": "#b1c8e9",
+                        "on-secondary-fixed-variant": "#314864",
+                        "on-surface-variant": "#414751",
+                        "surface-bright": "#f9f9f9",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary-fixed-variant": "#00497e",
+                        "primary-container": "#2b78bf",
+                        "primary": "#005ea1",
+                        "tertiary-fixed": "#ffdeab",
+                        "surface-tint": "#0061a5",
+                        "on-primary": "#ffffff",
+                        "outline": "#717782",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-tertiary-container": "#fffbff",
+                        "inverse-on-surface": "#f1f1f1",
+                        "primary-fixed": "#d2e4ff",
+                        "on-primary-fixed": "#001c37",
+                        "secondary-container": "#c4dcfe",
+                        "tertiary-fixed-dim": "#fbbb45"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .vault-gradient-bg {
+            background: radial-gradient(circle at top left, #f3f3f3 0%, #ffffff 100%);
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #005ea1 0%, #2b78bf 100%);
+        }
+        .ambient-shadow {
+            box-shadow: 0px 12px 32px rgba(0, 28, 55, 0.06);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased overflow-hidden">
+<!-- Top Navigation Shell -->
+<header class="flex items-center justify-between px-6 py-2 w-full fixed top-0 z-50 bg-surface/80 backdrop-blur-xl">
+<div class="flex items-center gap-8">
+<span class="text-lg font-extrabold tracking-tighter text-slate-900">mmpassword</span>
+<nav class="hidden md:flex items-center gap-6">
+<span class="font-manrope font-semibold text-sm tracking-tight text-slate-600 hover:text-slate-900 transition-colors duration-200 cursor-pointer">File</span>
+<span class="font-manrope font-semibold text-sm tracking-tight text-slate-600 hover:text-slate-900 transition-colors duration-200 cursor-pointer">Edit</span>
+<span class="font-manrope font-semibold text-sm tracking-tight text-slate-600 hover:text-slate-900 transition-colors duration-200 cursor-pointer">Groups</span>
+<span class="font-manrope font-semibold text-sm tracking-tight text-slate-600 hover:text-slate-900 transition-colors duration-200 cursor-pointer">Items</span>
+<span class="font-manrope font-semibold text-sm tracking-tight text-slate-600 hover:text-slate-900 transition-colors duration-200 cursor-pointer">Tools</span>
+<span class="font-manrope font-semibold text-sm tracking-tight text-slate-600 hover:text-slate-900 transition-colors duration-200 cursor-pointer">View</span>
+<span class="font-manrope font-semibold text-sm tracking-tight text-slate-600 hover:text-slate-900 transition-colors duration-200 cursor-pointer">Help</span>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded hover:bg-slate-200/50 transition-all active:opacity-80">
+<span class="material-symbols-outlined text-slate-600">lock</span>
+</button>
+<button class="p-2 rounded hover:bg-slate-200/50 transition-all active:opacity-80">
+<span class="material-symbols-outlined text-slate-600">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Unlock Experience -->
+<main class="min-h-screen flex items-center justify-center vault-gradient-bg px-4">
+<div class="w-full max-w-md">
+<!-- Back Navigation -->
+<div class="mb-8 group">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors duration-200">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+<span class="font-label text-sm font-medium">Back to Welcome</span>
+</button>
+</div>
+<!-- Unlock Card -->
+<div class="bg-surface-container-lowest rounded-xl p-10 ambient-shadow border border-outline-variant/10">
+<div class="flex flex-col items-center text-center">
+<!-- Security Shield Icon -->
+<div class="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary text-[48px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+<h1 class="font-headline text-2xl font-bold tracking-tight text-on-surface mb-1">Personal Vault.mmp</h1>
+<p class="font-body text-sm text-on-surface-variant mb-10">Enter your master password to unlock access</p>
+<!-- Form Container -->
+<form class="w-full space-y-6">
+<div class="relative text-left">
+<label class="block font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2 px-1" for="master-password">Master Password</label>
+<div class="relative group">
+<input class="w-full h-14 px-4 bg-surface-container-highest border-0 rounded-lg font-body text-lg tracking-[0.2em] focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all placeholder:tracking-normal placeholder:text-outline" id="master-password" placeholder="••••••••••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5 px-2 py-1 rounded bg-white/50" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+<span class="font-label text-xs font-medium">Show</span>
+</button>
+</div>
+</div>
+<!-- Primary CTA -->
+<button class="w-full h-14 primary-gradient text-on-primary font-headline font-bold rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] transition-all" type="submit">
+<span class="material-symbols-outlined text-[22px]">lock_open</span>
+                            Unlock Vault
+                        </button>
+<!-- Biometric Alternative -->
+<div class="flex items-center gap-4 my-4">
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+<span class="font-label text-xs font-bold text-outline uppercase tracking-widest">OR</span>
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+</div>
+<button class="w-full h-14 bg-surface-container-high hover:bg-surface-variant text-on-surface font-headline font-semibold rounded-lg flex items-center justify-center gap-2 transition-all" type="button">
+<span class="material-symbols-outlined text-[22px]">fingerprint</span>
+                            Use Touch ID / Face ID
+                        </button>
+<!-- Security Notice -->
+<div class="pt-4 flex items-center justify-center gap-2">
+<div class="flex gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+</div>
+<span class="font-label text-xs text-on-surface-variant font-medium">Remaining attempts: <span class="text-on-surface font-bold">5/5</span></span>
+</div>
+</form>
+</div>
+</div>
+<!-- Secondary Links -->
+<div class="mt-8 flex justify-center gap-6">
+<button class="font-label text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors">Forgot Master Password?</button>
+<span class="text-outline-variant">|</span>
+<button class="font-label text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors">Emergency Access</button>
+</div>
+</div>
+</main>
+<!-- App Background Decals (Decorative) -->
+<div class="fixed top-20 right-20 opacity-5 pointer-events-none">
+<span class="material-symbols-outlined text-[300px]" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<!-- Footer Status Bar -->
+<footer class="fixed bottom-0 w-full h-8 flex justify-between items-center px-4 z-50 bg-slate-50 border-t border-slate-200">
+<div class="flex items-center gap-4">
+<span class="font-inter text-xs tracking-wide uppercase text-emerald-600 font-bold">Status: Secure</span>
+<span class="font-inter text-xs tracking-wide uppercase text-slate-400">GitHub Connection</span>
+</div>
+<div class="font-inter text-xs tracking-wide uppercase text-slate-400">
+            v2.4.0 | ✓ Auto-saved
+        </div>
+</footer>
+</body></html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GitHub Connection - mmpassword</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "inverse-primary": "#a0caff",
+              "surface-tint": "#0061a5",
+              "outline": "#717782",
+              "tertiary-fixed": "#ffdeab",
+              "surface-variant": "#e2e2e2",
+              "outline-variant": "#c1c7d2",
+              "on-background": "#1a1c1c",
+              "secondary": "#49607d",
+              "surface": "#f9f9f9",
+              "on-tertiary-container": "#fffbff",
+              "on-tertiary-fixed": "#271900",
+              "secondary-fixed": "#d2e4ff",
+              "secondary-fixed-dim": "#b1c8e9",
+              "secondary-container": "#c4dcfe",
+              "surface-container-low": "#f3f3f3",
+              "surface-bright": "#f9f9f9",
+              "on-primary-fixed": "#001c37",
+              "on-primary": "#ffffff",
+              "surface-container-high": "#e8e8e8",
+              "on-tertiary-fixed-variant": "#5f4100",
+              "error-container": "#ffdad6",
+              "surface-dim": "#dadada",
+              "on-tertiary": "#ffffff",
+              "surface-container": "#eeeeee",
+              "primary": "#005ea1",
+              "background": "#f9f9f9",
+              "tertiary-fixed-dim": "#fbbb45",
+              "on-error-container": "#93000a",
+              "inverse-surface": "#2f3131",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "on-surface": "#1a1c1c",
+              "on-error": "#ffffff",
+              "on-primary-fixed-variant": "#00497e",
+              "primary-fixed": "#d2e4ff",
+              "primary-container": "#2b78bf",
+              "on-secondary-container": "#4a617d",
+              "error": "#ba1a1a",
+              "surface-container-highest": "#e2e2e2",
+              "on-surface-variant": "#414751",
+              "inverse-on-surface": "#f1f1f1",
+              "primary-fixed-dim": "#a0caff",
+              "on-primary-container": "#fdfcff",
+              "on-secondary-fixed": "#011d36",
+              "tertiary-container": "#9a6c00",
+              "on-secondary-fixed-variant": "#314864",
+              "tertiary": "#7b5500"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .bg-primary-gradient {
+        background: linear-gradient(135deg, #005ea1 0%, #2b78bf 100%);
+      }
+      .glass-header {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+    </style>
+</head>
+<body class="bg-background font-body text-on-surface">
+<!-- Top Navigation Bar -->
+<nav class="flex items-center justify-between px-6 py-2 w-full fixed top-0 z-50 bg-surface/80 dark:bg-slate-900/80 glass-header shadow-sm dark:shadow-none font-manrope font-semibold text-sm tracking-tight">
+<div class="flex items-center gap-8">
+<span class="text-lg font-extrabold tracking-tighter text-slate-900 dark:text-slate-100">mmpassword</span>
+<div class="hidden md:flex gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors duration-200" href="#">File</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors duration-200" href="#">Edit</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors duration-200" href="#">Groups</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors duration-200" href="#">Items</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors duration-200" href="#">Tools</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors duration-200" href="#">View</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors duration-200" href="#">Help</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-all active:opacity-80">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400" data-icon="lock">lock</span>
+</button>
+<button class="p-2 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-all active:opacity-80">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400" data-icon="settings">settings</span>
+</button>
+</div>
+</nav>
+<main class="min-h-screen pt-24 pb-16 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+<!-- Centered Configuration Form -->
+<div class="max-w-2xl w-full">
+<div class="text-center mb-10">
+<h1 class="font-headline text-3xl font-extrabold text-on-surface tracking-tight mb-2">GitHub Connection</h1>
+<p class="text-on-surface-variant font-medium">Configure your vault synchronization with GitHub.</p>
+</div>
+<div class="space-y-6">
+<!-- Repository Info Section -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-ambient">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="database">database</span>
+<h2 class="font-headline text-lg font-bold text-on-surface">Repository Info</h2>
+</div>
+<div class="grid grid-cols-1 gap-5">
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Connection Name</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none" placeholder="e.g. Personal Production Vault" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Repository URL</label>
+<div class="flex gap-2">
+<input class="flex-grow bg-surface-container-highest border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none" placeholder="https://github.com/user/repo" type="url"/>
+<button class="bg-surface-container-high text-on-surface px-4 py-2 rounded-lg text-sm font-semibold hover:bg-surface-container-highest transition-colors active:scale-95">Verify</button>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Branch Name</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none" placeholder="main" type="text"/>
+</div>
+</div>
+</section>
+<!-- Authentication Section -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-ambient">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="key">key</span>
+<h2 class="font-headline text-lg font-bold text-on-surface">Authentication</h2>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant px-1">Access Token</label>
+<div class="relative group">
+<input class="w-full bg-surface-container-highest border-none rounded-lg p-3 pr-12 text-sm focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none" placeholder="ghp_************************************" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+<p class="text-[10px] text-on-surface-variant mt-1 px-1">Generate a Personal Access Token with 'repo' permissions in your GitHub settings.</p>
+</div>
+</section>
+<!-- Sync Settings Section -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-ambient">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="sync">sync</span>
+<h2 class="font-headline text-lg font-bold text-on-surface">Sync Settings</h2>
+</div>
+<div class="space-y-4">
+<label class="flex items-center gap-4 cursor-pointer p-2 hover:bg-surface-container-low rounded-lg transition-colors group">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary/20 cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-on-surface">Auto-push changes</span>
+<span class="text-xs text-on-surface-variant">Automatically commit and push when vault updates.</span>
+</div>
+</label>
+<label class="flex items-center gap-4 cursor-pointer p-2 hover:bg-surface-container-low rounded-lg transition-colors group">
+<div class="relative flex items-center">
+<input checked="" class="peer h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary/20 cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-on-surface">Confirm before push</span>
+<span class="text-xs text-on-surface-variant">Review change summaries before uploading to GitHub.</span>
+</div>
+</label>
+<label class="flex items-center gap-4 cursor-pointer p-2 hover:bg-surface-container-low rounded-lg transition-colors group">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary/20 cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-on-surface">Auto-pull on startup</span>
+<span class="text-xs text-on-surface-variant">Fetch the latest remote vault data when the app opens.</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Action Buttons -->
+<div class="flex flex-col sm:flex-row gap-4 pt-4">
+<button class="flex-1 bg-surface-container-high text-on-surface px-6 py-4 rounded-lg font-bold text-sm hover:bg-surface-container-highest transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="science">science</span>
+                        Test Connection
+                    </button>
+<button class="flex-[1.5] bg-primary-gradient text-on-primary px-6 py-4 rounded-lg font-bold text-sm hover:shadow-lg hover:opacity-90 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="cloud_sync">cloud_sync</span>
+                        Connect &amp; Import
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Global Footer -->
+<footer class="fixed bottom-0 w-full flex justify-between items-center px-4 z-50 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 h-8 font-inter text-xs tracking-wide uppercase">
+<div class="flex gap-4">
+<span class="text-emerald-600 dark:text-emerald-400 font-bold">Status: Secure</span>
+<span class="text-emerald-600 dark:text-emerald-400 font-bold">GitHub Connection</span>
+</div>
+<div class="text-slate-400 dark:text-slate-500">
+            v2.4.0 | ✓ Auto-saved
+        </div>
+</footer>
+<!-- Decorative Illustration Background Elements -->
+<div class="fixed top-20 right-[5%] w-64 h-64 opacity-5 pointer-events-none">
+<img alt="Background Pattern" class="w-full h-full object-contain" data-alt="abstract tech circuit pattern with subtle glowing lines and connection points on a clean light gray background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCen3bIBjcxla2HweehCIj-HXRs1psy659_ugGB3WV7Jnp6RgODMUGoJ3KCgY9xdNNJ2uvZSPVawQQ1Drq6pLer00rNXByRYs6v7QFfAuFm9gL5t406XCbfiXKeN3UhCNFhFIdPytSJjFOZO_l48-zgMlvSnwDa8G_D4gqnfYfOsJclX8Pe2YAMSiTLxEQH7mAlCENYViGcO2mVecrsNaZqD19_f_8YVdtBz9CnZyYianLmRosyykuCGWf8X0UZDzGDimE9CH9_vOO2"/>
+</div>
+<div class="fixed bottom-20 left-[5%] w-48 h-48 opacity-5 pointer-events-none">
+<img alt="Background Icon" class="w-full h-full object-contain rotate-12" data-alt="minimalist 3d render of a secure padlock with geometric architectural details in soft metallic blue tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLqDGFtWufy-eO33AttmTGqQvV9CCaarQ6BKbwUy2IE84veWKGwx6-K9OP_h3KICiAobi5X9y8QN_DW6oKeRtWkP8z1IzP3AyqzpT4PXkTl4VWcsrebB_Xt6j7Na713n8eYGHLzyvN1vhbN1_uXwE-5vnx3Nc88Elj9HDCnD6vpZQsoTNjOFf73qMBGeEXuQRB80i34IshRkREMlkCACUeAuFTM7F2Bzs6DaD-k12Ga6EfoCDpejbplF2gt6hfkpMstWzMBlPFp7I5"/>
+</div>
+</body></html>
