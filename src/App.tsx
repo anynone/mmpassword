@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useVaultStore } from "./stores/vaultStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { WelcomeScreen } from "./components/screens/WelcomeScreen";
@@ -9,9 +10,37 @@ import { ThemeProvider, ToastProvider } from "./components/common";
 
 export type AppScreen = "welcome" | "unlock" | "main" | "newVault";
 
+interface LoadingState {
+  isLoading: boolean;
+  message: string;
+  subMessage?: string;
+}
+
+function LoadingOverlay({ loading }: { loading: LoadingState }) {
+  if (!loading.isLoading) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 min-w-[280px]">
+        <span className="material-symbols-outlined animate-spin text-primary text-5xl">
+          progress_activity
+        </span>
+        <div className="text-center">
+          <p className="font-headline font-bold text-on-surface">{loading.message}</p>
+          {loading.subMessage && (
+            <p className="text-sm text-on-surface-variant mt-1">{loading.subMessage}</p>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>("welcome");
   const [pendingVaultPath, setPendingVaultPath] = useState<string | null>(null);
+  const [loading, setLoading] = useState<LoadingState>({ isLoading: false, message: "" });
 
   const { vault, isUnlocked, openGitVault, createGitVault } = useVaultStore();
   const { loadSettings } = useSettingsStore();
@@ -63,12 +92,19 @@ function App() {
     keyPath: string,
     password: string
   ) => {
+    setLoading({
+      isLoading: true,
+      message: "Opening Vault from Git",
+      subMessage: "Cloning repository and decrypting...",
+    });
     try {
       await openGitVault(repoUrl, branch, vaultPath, keyPath, password);
       setCurrentScreen("main");
     } catch (error) {
       console.error("Failed to open Git vault:", error);
       alert(`Failed to open vault: ${error}`);
+    } finally {
+      setLoading({ isLoading: false, message: "" });
     }
   };
 
@@ -81,12 +117,19 @@ function App() {
     name: string,
     password: string
   ) => {
+    setLoading({
+      isLoading: true,
+      message: "Creating Vault in Git Repository",
+      subMessage: "Initializing repository and encrypting vault...",
+    });
     try {
       await createGitVault(repoUrl, branch, vaultPath, keyPath, name, password);
       setCurrentScreen("main");
     } catch (error) {
       console.error("Failed to create Git vault:", error);
       alert(`Failed to create vault: ${error}`);
+    } finally {
+      setLoading({ isLoading: false, message: "" });
     }
   };
 
@@ -122,6 +165,9 @@ function App() {
             <MainScreen onLock={handleLock} />
           )}
         </div>
+
+        {/* Global Loading Overlay */}
+        <LoadingOverlay loading={loading} />
       </ToastProvider>
     </ThemeProvider>
   );
