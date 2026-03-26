@@ -13,7 +13,7 @@ function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>("welcome");
   const [pendingVaultPath, setPendingVaultPath] = useState<string | null>(null);
 
-  const { vault, isUnlocked } = useVaultStore();
+  const { vault, isUnlocked, openGitVault, createGitVault } = useVaultStore();
   const { loadSettings } = useSettingsStore();
 
   // Load settings on mount
@@ -55,6 +55,41 @@ function App() {
     setPendingVaultPath(null);
   };
 
+  // Handle opening a vault from Git repository
+  const handleOpenGitVault = async (
+    repoUrl: string,
+    branch: string,
+    vaultPath: string,
+    keyPath: string,
+    password: string
+  ) => {
+    try {
+      await openGitVault(repoUrl, branch, vaultPath, keyPath, password);
+      setCurrentScreen("main");
+    } catch (error) {
+      console.error("Failed to open Git vault:", error);
+      alert(`Failed to open vault: ${error}`);
+    }
+  };
+
+  // Handle creating a new vault in Git repository
+  const handleCreateGitVault = async (
+    repoUrl: string,
+    branch: string,
+    vaultPath: string,
+    keyPath: string,
+    name: string,
+    password: string
+  ) => {
+    try {
+      await createGitVault(repoUrl, branch, vaultPath, keyPath, name, password);
+      setCurrentScreen("main");
+    } catch (error) {
+      console.error("Failed to create Git vault:", error);
+      alert(`Failed to create vault: ${error}`);
+    }
+  };
+
   return (
     <ThemeProvider>
       <ToastProvider>
@@ -63,6 +98,8 @@ function App() {
             <WelcomeScreen
               onOpenVault={handleOpenVault}
               onCreateVault={handleCreateVault}
+              onOpenGitVault={handleOpenGitVault}
+              onCreateGitVault={handleCreateGitVault}
             />
           )}
 

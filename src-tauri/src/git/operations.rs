@@ -234,7 +234,50 @@ impl GitOperations {
         }
     }
 
-    /// Clone a repository
+    /// Check if a remote branch exists
+    pub async fn remote_branch_exists(&self, repo_url: &str, branch: &str) -> Result<bool> {
+        let output = self
+            .git_command()
+            .args(["ls-remote", "--heads", repo_url, &format!("refs/heads/{}", branch)])
+            .output()
+            .await;
+
+        match output {
+            Ok(output) if output.status.success() => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                Ok(!stdout.trim().is_empty())
+            }
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Err(AppError::GitError(format!("Failed to check remote branch: {}", stderr)))
+            }
+            Err(e) => Err(AppError::GitError(format!("Failed to run git ls-remote: {}", e))),
+        }
+    }
+
+    /// Check if the remote repository has any branches
+    pub async fn has_remote_branches(&self, repo_url: &str) -> Result<bool> {
+        let output = self
+            .git_command()
+            .args(["ls-remote", "--heads", repo_url])
+            .output()
+            .await;
+
+        match output {
+            Ok(output) if output.status.success() => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                Ok(!stdout.trim().is_empty())
+            }
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Err(AppError::GitError(format!("Failed to check remote branches: {}", stderr)))
+            }
+            Err(e) => Err(AppError::GitError(format!("Failed to run git ls-remote: {}", e))),
+        }
+    }
+
+    /// Clone a repository, creating the branch if it doesn't exist
+    /// For empty repositories, initialize with a placeholder commit
     pub async fn clone_repository(&self, repo_url: &str, target_dir: &Path, branch: &str) -> Result<()> {
         // Ensure parent directory exists
         if let Some(parent) = target_dir.parent() {
@@ -243,26 +286,204 @@ impl GitOperations {
                 .map_err(|e| AppError::Io(e))?;
         }
 
-        let output = self
+        // Check if target branch exists remotely
+        let branch_exists = self.remote_branch_exists(repo_url, branch).await?;
+
+        if branch_exists {
+            // Branch exists, clone it directly
+            let output = self
+                .git_command()
+                .args([
+                    "clone",
+                    "--branch", branch,
+                    "--single-branch",
+                    "--depth", "1",
+                    repo_url,
+                ])
+                .arg(target_dir)
+                .output()
+                .await;
+
+            match output {
+                Ok(output) if output.status.success() => return Ok(()),
+                Ok(output) => {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    return Err(AppError::GitError(stderr.to_string()));
+                }
+                Err(e) => return Err(AppError::GitError(format!("Failed to run git clone: {}", e))),
+            }
+        }
+
+        // Target branch doesn't exist, check if repo has any branches
+        let has_branches = self.has_remote_branches(repo_url).await?;
+
+        if has_branches {
+            // Repo has branches but not the target one
+            // Clone the default branch and create the new branch
+            let output = self
+                .git_command()
+                .args(["clone", repo_url])
+                .arg(target_dir)
+                .output()
+                .await;
+
+            match output {
+                Ok(output) if output.status.success() => {
+                    // Create and switch to the new branch
+                    self.create_and_push_branch(target_dir, branch).await
+                }
+                Ok(output) => {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    Err(AppError::GitError(stderr.to_string()))
+                }
+                Err(e) => Err(AppError::GitError(format!("Failed to run git clone: {}", e))),
+            }
+        } else {
+            // Empty repository - initialize locally and push
+            self.init_empty_repo(target_dir, repo_url, branch).await
+        }
+    }
+
+    /// Create a new branch and push it to remote
+    async fn create_and_push_branch(&self, repo_dir: &Path, branch: &str) -> Result<()> {
+        // Create and switch to the new branch
+        let checkout_output = self
             .git_command()
-            .args([
-                "clone",
-                "--branch", branch,
-                "--single-branch",
-                "--depth", "1",
-                repo_url,
-            ])
-            .arg(target_dir)
+            .args(["checkout", "-b", branch])
+            .current_dir(repo_dir)
             .output()
             .await;
 
-        match output {
+        match checkout_output {
+            Ok(output) if output.status.success() => {
+                // Push the new branch to remote and set upstream
+                let push_output = self
+                    .git_command()
+                    .args(["push", "-u", "origin", branch])
+                    .current_dir(repo_dir)
+                    .output()
+                    .await;
+
+                match push_output {
+                    Ok(output) if output.status.success() => Ok(()),
+                    Ok(output) => {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        Err(AppError::GitError(format!("Failed to push new branch: {}", stderr)))
+                    }
+                    Err(e) => Err(AppError::GitError(format!("Failed to run git push: {}", e))),
+                }
+            }
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Err(AppError::GitError(format!("Failed to create branch: {}", stderr)))
+            }
+            Err(e) => Err(AppError::GitError(format!("Failed to run git checkout: {}", e))),
+        }
+    }
+
+    /// Initialize an empty repository and push to remote
+    async fn init_empty_repo(&self, target_dir: &Path, repo_url: &str, branch: &str) -> Result<()> {
+        // Create the directory
+        tokio::fs::create_dir_all(target_dir)
+            .await
+            .map_err(|e| AppError::Io(e))?;
+
+        // Initialize git repo
+        let init_output = self
+            .git_command()
+            .args(["init"])
+            .current_dir(target_dir)
+            .output()
+            .await;
+
+        match init_output {
+            Ok(output) if output.status.success() => {}
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(AppError::GitError(format!("Failed to init repo: {}", stderr)));
+            }
+            Err(e) => return Err(AppError::GitError(format!("Failed to run git init: {}", e))),
+        }
+
+        // Set initial branch name (git 2.28+)
+        let _ = self
+            .git_command()
+            .args(["branch", "-M", branch])
+            .current_dir(target_dir)
+            .output()
+            .await;
+
+        // Add remote
+        let remote_output = self
+            .git_command()
+            .args(["remote", "add", "origin", repo_url])
+            .current_dir(target_dir)
+            .output()
+            .await;
+
+        match remote_output {
+            Ok(output) if output.status.success() => {}
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(AppError::GitError(format!("Failed to add remote: {}", stderr)));
+            }
+            Err(e) => return Err(AppError::GitError(format!("Failed to run git remote: {}", e))),
+        }
+
+        // Create a placeholder file for initial commit
+        let readme_path = target_dir.join("README.md");
+        tokio::fs::write(&readme_path, "# mmpassword Vault\n\nThis repository stores encrypted password vault data.\n")
+            .await
+            .map_err(|e| AppError::Io(e))?;
+
+        // Add and commit
+        let add_output = self
+            .git_command()
+            .args(["add", "README.md"])
+            .current_dir(target_dir)
+            .output()
+            .await;
+
+        match add_output {
+            Ok(output) if output.status.success() => {}
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(AppError::GitError(format!("Failed to git add: {}", stderr)));
+            }
+            Err(e) => return Err(AppError::GitError(format!("Failed to run git add: {}", e))),
+        }
+
+        let commit_output = self
+            .git_command()
+            .args(["commit", "-m", "Initial commit"])
+            .current_dir(target_dir)
+            .output()
+            .await;
+
+        match commit_output {
+            Ok(output) if output.status.success() => {}
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(AppError::GitError(format!("Failed to commit: {}", stderr)));
+            }
+            Err(e) => return Err(AppError::GitError(format!("Failed to run git commit: {}", e))),
+        }
+
+        // Push to remote
+        let push_output = self
+            .git_command()
+            .args(["push", "-u", "origin", branch])
+            .current_dir(target_dir)
+            .output()
+            .await;
+
+        match push_output {
             Ok(output) if output.status.success() => Ok(()),
             Ok(output) => {
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                Err(AppError::GitError(stderr.to_string()))
+                Err(AppError::GitError(format!("Failed to push to remote: {}", stderr)))
             }
-            Err(e) => Err(AppError::GitError(format!("Failed to run git clone: {}", e))),
+            Err(e) => Err(AppError::GitError(format!("Failed to run git push: {}", e))),
         }
     }
 

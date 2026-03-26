@@ -4,9 +4,54 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::error::{AppError, Result};
+use crate::git::sync::{get_clone_dir, GitSyncEngine};
 use crate::models::{CreateEntryRequest, Entry, UpdateEntryRequest};
 use crate::state::AppState;
 use crate::storage::save_vault_file_with_key;
+
+/// Helper to extract Git sync info if available
+fn get_git_sync_info(state: &State<'_, AppState>) -> Option<(crate::git::repository::GitRepository, std::path::PathBuf)> {
+    let session = state.session.read();
+    session.as_ref().and_then(|s| {
+        s.git_sync.as_ref().map(|git_sync| {
+            let clone_dir = get_clone_dir(&git_sync.repository.url).ok()?;
+            Some((git_sync.repository.clone(), clone_dir))
+        })
+    }).flatten()
+}
+
+/// Helper to get local vault path if available
+fn get_local_vault_path(state: &State<'_, AppState>) -> Option<std::path::PathBuf> {
+    let session = state.session.read();
+    session.as_ref().and_then(|s| {
+        if s.git_sync.is_none() {
+            Some(s.path.clone())
+        } else {
+            None
+        }
+    })
+}
+
+/// Helper function to save vault - handles both local and Git vaults
+async fn save_vault_changes(
+    state: &State<'_, AppState>,
+    vault: &crate::models::Vault,
+    key: &[u8; 32],
+    salt: &[u8; 16],
+    commit_message: &str,
+) -> Result<()> {
+    // Check if this is a Git vault (extract info before any await)
+    if let Some((repository, clone_dir)) = get_git_sync_info(state) {
+        // Git vault - save through GitSyncEngine
+        let engine = GitSyncEngine::new(repository, clone_dir);
+        engine.save_vault(vault, key, salt, Some(commit_message)).await?;
+    } else if let Some(path) = get_local_vault_path(state) {
+        // Local vault - save to file
+        save_vault_file_with_key(&path, vault, key, salt)?;
+    }
+
+    Ok(())
+}
 
 /// Get all entries
 #[tauri::command]
@@ -68,7 +113,7 @@ pub async fn create_entry(
     state: State<'_, AppState>,
 ) -> Result<Entry> {
     // Get session info and modify vault
-    let (entry, path, vault, key, salt) = {
+    let (entry, vault, key, salt) = {
         let mut session = state.session.write();
         let session = session.as_mut().ok_or(AppError::VaultLocked)?;
 
@@ -82,15 +127,14 @@ pub async fn create_entry(
 
         (
             entry,
-            session.path.clone(),
             session.vault.clone(),
             *session.key.as_bytes(),
             session.salt,
         )
     };
 
-    // Save vault to file
-    save_vault_file_with_key(&path, &vault, &key, &salt)?;
+    // Save vault changes
+    save_vault_changes(&state, &vault, &key, &salt, "Add new entry").await?;
 
     // Mark as clean
     {
@@ -110,7 +154,7 @@ pub async fn update_entry(
     request: UpdateEntryRequest,
     state: State<'_, AppState>,
 ) -> Result<Entry> {
-    let (entry, path, vault, key, salt) = {
+    let (entry, vault, key, salt) = {
         let mut session = state.session.write();
         let session = session.as_mut().ok_or(AppError::VaultLocked)?;
 
@@ -127,15 +171,14 @@ pub async fn update_entry(
 
         (
             entry,
-            session.path.clone(),
             session.vault.clone(),
             *session.key.as_bytes(),
             session.salt,
         )
     };
 
-    // Save vault to file
-    save_vault_file_with_key(&path, &vault, &key, &salt)?;
+    // Save vault changes
+    save_vault_changes(&state, &vault, &key, &salt, "Update entry").await?;
 
     Ok(entry)
 }
@@ -146,7 +189,7 @@ pub async fn delete_entry(
     id: String,
     state: State<'_, AppState>,
 ) -> Result<()> {
-    let (path, vault, key, salt) = {
+    let (vault, key, salt) = {
         let mut session = state.session.write();
         let session = session.as_mut().ok_or(AppError::VaultLocked)?;
 
@@ -158,15 +201,14 @@ pub async fn delete_entry(
         }
 
         (
-            session.path.clone(),
             session.vault.clone(),
             *session.key.as_bytes(),
             session.salt,
         )
     };
 
-    // Save vault to file
-    save_vault_file_with_key(&path, &vault, &key, &salt)?;
+    // Save vault changes
+    save_vault_changes(&state, &vault, &key, &salt, "Delete entry").await?;
 
     Ok(())
 }
@@ -188,7 +230,7 @@ pub async fn restore_entry(
     id: String,
     state: State<'_, AppState>,
 ) -> Result<()> {
-    let (path, vault, key, salt) = {
+    let (vault, key, salt) = {
         let mut session = state.session.write();
         let session = session.as_mut().ok_or(AppError::VaultLocked)?;
 
@@ -200,15 +242,14 @@ pub async fn restore_entry(
         }
 
         (
-            session.path.clone(),
             session.vault.clone(),
             *session.key.as_bytes(),
             session.salt,
         )
     };
 
-    // Save vault to file
-    save_vault_file_with_key(&path, &vault, &key, &salt)?;
+    // Save vault changes
+    save_vault_changes(&state, &vault, &key, &salt, "Restore entry").await?;
 
     Ok(())
 }
@@ -219,7 +260,7 @@ pub async fn delete_entry_permanently(
     id: String,
     state: State<'_, AppState>,
 ) -> Result<()> {
-    let (path, vault, key, salt) = {
+    let (vault, key, salt) = {
         let mut session = state.session.write();
         let session = session.as_mut().ok_or(AppError::VaultLocked)?;
 
@@ -231,15 +272,14 @@ pub async fn delete_entry_permanently(
         }
 
         (
-            session.path.clone(),
             session.vault.clone(),
             *session.key.as_bytes(),
             session.salt,
         )
     };
 
-    // Save vault to file
-    save_vault_file_with_key(&path, &vault, &key, &salt)?;
+    // Save vault changes
+    save_vault_changes(&state, &vault, &key, &salt, "Permanently delete entry").await?;
 
     Ok(())
 }
@@ -249,22 +289,21 @@ pub async fn delete_entry_permanently(
 pub async fn empty_trash(
     state: State<'_, AppState>,
 ) -> Result<()> {
-    let (path, vault, key, salt) = {
+    let (vault, key, salt) = {
         let mut session = state.session.write();
         let session = session.as_mut().ok_or(AppError::VaultLocked)?;
 
         session.vault.empty_trash();
 
         (
-            session.path.clone(),
             session.vault.clone(),
             *session.key.as_bytes(),
             session.salt,
         )
     };
 
-    // Save vault to file
-    save_vault_file_with_key(&path, &vault, &key, &salt)?;
+    // Save vault changes
+    save_vault_changes(&state, &vault, &key, &salt, "Empty trash").await?;
 
     Ok(())
 }
