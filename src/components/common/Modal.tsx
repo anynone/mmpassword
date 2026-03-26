@@ -52,7 +52,7 @@ export function Modal({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -66,23 +66,26 @@ export function Modal({
           bg-surface-container-lowest rounded-xl shadow-ambient
           ghost-border overflow-hidden
           animate-in fade-in zoom-in-95 duration-200
+          flex flex-col max-h-[85vh]
         `}
       >
         {/* Header */}
         {title && (
-          <div className="px-6 py-4 glass-header border-b border-outline-variant/10">
+          <div className="flex-shrink-0 px-6 py-4 glass-header border-b border-outline-variant/10">
             <h2 className="font-headline font-bold text-lg text-on-surface">
               {title}
             </h2>
           </div>
         )}
 
-        {/* Body */}
-        <div className="p-6">{children}</div>
+        {/* Body - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+          {children}
+        </div>
 
-        {/* Footer */}
+        {/* Footer - Fixed at bottom */}
         {footer && (
-          <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant/10 flex justify-end gap-3">
+          <div className="flex-shrink-0 px-6 py-4 bg-surface-container-low border-t border-outline-variant/10 flex justify-end gap-3">
             {footer}
           </div>
         )}
