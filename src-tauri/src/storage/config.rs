@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{AppError, Result};
-use crate::models::VaultMeta;
+use crate::models::{GitRepoMeta, VaultMeta};
 
 /// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +25,8 @@ pub struct AppConfig {
     pub recent_vaults: Vec<VaultMeta>,
     /// Last opened vault path
     pub last_vault_path: Option<String>,
+    /// Recent Git repositories
+    pub recent_git_repos: Vec<GitRepoMeta>,
     /// Window state
     pub window_state: WindowState,
 }
@@ -72,6 +74,7 @@ impl Default for AppConfig {
             open_last_vault: true,
             recent_vaults: Vec::new(),
             last_vault_path: None,
+            recent_git_repos: Vec::new(),
             window_state: WindowState::default(),
         }
     }
@@ -133,6 +136,25 @@ impl AppConfig {
     /// Clear last vault path
     pub fn clear_last_vault(&mut self) {
         self.last_vault_path = None;
+    }
+
+    /// Add a Git repository to recent list
+    pub fn add_recent_git_repo(&mut self, meta: GitRepoMeta) {
+        // Remove if already exists (by URL and branch)
+        self.recent_git_repos
+            .retain(|r| !(r.repo_url == meta.repo_url && r.branch == meta.branch));
+
+        // Add to front
+        self.recent_git_repos.insert(0, meta);
+
+        // Keep only last 10
+        self.recent_git_repos.truncate(10);
+    }
+
+    /// Remove a Git repository from recent list
+    pub fn remove_recent_git_repo(&mut self, repo_url: &str, branch: &str) {
+        self.recent_git_repos
+            .retain(|r| !(r.repo_url == repo_url && r.branch == branch));
     }
 }
 

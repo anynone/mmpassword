@@ -65,3 +65,12 @@ export interface GitSyncResult {
   newCommitSha?: string | null;
   error?: string | null;
 }
+
+/** Git repository metadata for recent connections */
+export interface GitRepoMeta {
+  repoUrl: string;
+  branch: string;
+  keyPath: string;
+  lastAccessed: string;
+  repoName: string;
+}

@@ -10,6 +10,28 @@ use crate::git::sync::{get_clone_dir, GitSyncEngine, GitSyncResult};
 use crate::models::Vault;
 use crate::state::AppState;
 
+/// List all vault files in a Git repository
+#[tauri::command]
+pub async fn list_git_vaults(
+    repo_url: String,
+    branch: String,
+    key_path: String,
+) -> Result<Vec<String>> {
+    let ssh_config = crate::git::ssh_config::SshKeyConfig::new(expand_tilde(&key_path));
+    // Use a placeholder vault_path since we're listing all vaults
+    let repository = GitRepository::with_options(
+        repo_url,
+        branch,
+        "placeholder.mmp".to_string(),
+        ssh_config,
+    );
+
+    let clone_dir = get_clone_dir(&repository.url)?;
+    let engine = GitSyncEngine::new(repository, clone_dir);
+
+    engine.list_vaults().await
+}
+
 /// Check if a vault exists in a Git repository
 #[tauri::command]
 pub async fn git_vault_exists(
@@ -72,6 +94,18 @@ pub async fn open_git_vault(
         sync_state,
     );
 
+    // Save to recent git repos
+    {
+        let mut config = state.config.write().await;
+        let git_meta = crate::models::GitRepoMeta::new(
+            repo_url,
+            branch,
+            key_path,
+        );
+        config.add_recent_git_repo(git_meta);
+        let _ = config.save();
+    }
+
     Ok(vault)
 }
 
@@ -128,6 +162,18 @@ pub async fn create_git_vault(
         repository,
         sync_state,
     );
+
+    // Save to recent git repos
+    {
+        let mut config = state.config.write().await;
+        let git_meta = crate::models::GitRepoMeta::new(
+            repo_url,
+            branch,
+            key_path,
+        );
+        config.add_recent_git_repo(git_meta);
+        let _ = config.save();
+    }
 
     Ok(vault)
 }
