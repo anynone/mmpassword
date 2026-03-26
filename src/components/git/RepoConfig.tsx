@@ -47,6 +47,9 @@ export function RepoConfig({ sshKeyPath, onConfigured, onBack }: RepoConfigProps
       });
       console.log("validate_git_access result:", JSON.stringify(result, null, 2));
       console.log("result.valid type:", typeof result.valid, "value:", result.valid);
+      console.log("result.valid === true:", result.valid === true);
+      console.log("result keys:", Object.keys(result || {}));
+
       setValidation(result);
 
       if (result.valid) {
