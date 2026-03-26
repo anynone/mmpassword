@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>mmpassword - Secure Local Password Manager</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed": "#271900",
+                        "surface-container-high": "#e8e8e8",
+                        "inverse-surface": "#2f3131",
+                        "primary-fixed-dim": "#a0caff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#4a617d",
+                        "surface-dim": "#dadada",
+                        "on-primary-container": "#fdfcff",
+                        "error": "#ba1a1a",
+                        "secondary": "#49607d",
+                        "surface-container": "#eeeeee",
+                        "on-tertiary-fixed-variant": "#5f4100",
+                        "on-secondary-fixed": "#011d36",
+                        "on-error": "#ffffff",
+                        "on-background": "#1a1c1c",
+                        "tertiary": "#7b5500",
+                        "surface-container-low": "#f3f3f3",
+                        "on-error-container": "#93000a",
+                        "surface": "#f9f9f9",
+                        "background": "#f9f9f9",
+                        "tertiary-container": "#9a6c00",
+                        "inverse-primary": "#a0caff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#1a1c1c",
+                        "outline-variant": "#c1c7d2",
+                        "secondary-fixed": "#d2e4ff",
+                        "secondary-fixed-dim": "#b1c8e9",
+                        "on-secondary-fixed-variant": "#314864",
+                        "on-surface-variant": "#414751",
+                        "surface-bright": "#f9f9f9",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary-fixed-variant": "#00497e",
+                        "primary-container": "#2b78bf",
+                        "primary": "#005ea1",
+                        "tertiary-fixed": "#ffdeab",
+                        "surface-tint": "#0061a5",
+                        "on-primary": "#ffffff",
+                        "outline": "#717782",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-tertiary-container": "#fffbff",
+                        "inverse-on-surface": "#f1f1f1",
+                        "primary-fixed": "#d2e4ff",
+                        "on-primary-fixed": "#001c37",
+                        "secondary-container": "#c4dcfe",
+                        "tertiary-fixed-dim": "#fbbb45"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-header {
+            background: rgba(249, 249, 249, 0.8);
+            backdrop-filter: blur(20px);
+        }
+        .cta-gradient {
+            background: linear-gradient(135deg, #005ea1 0%, #2b78bf 100%);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-container selection:text-on-primary-container overflow-hidden h-screen flex flex-col">
+<!-- TopNavBar (Shared Component Logic) -->
+<header class="flex items-center justify-between px-6 py-2 w-full fixed top-0 z-50 bg-surface/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm dark:shadow-none font-manrope font-semibold text-sm tracking-tight">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="lock">lock</span>
+<span class="text-lg font-extrabold tracking-tighter text-slate-900 dark:text-slate-100">mmpassword</span>
+<div class="h-4 w-px bg-outline-variant mx-2"></div>
+<span class="text-on-surface-variant font-medium text-xs tracking-wide">Secure Local Password Manager</span>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">File</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">Edit</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">Groups</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">Items</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">Tools</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">View</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">Help</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-all text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-all text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 mt-12 mb-8 grid grid-cols-12 overflow-hidden">
+<!-- Left Sidebar: Contextual Navigation -->
+<aside class="col-span-3 bg-surface-container-low flex flex-col pt-8 pb-8 px-4 font-inter text-sm font-medium border-r border-transparent">
+<div class="px-3 mb-8">
+<h2 class="text-xl font-headline font-bold text-slate-900">Personal Vault</h2>
+<p class="text-xs text-on-surface-variant mt-1">Last synced: 2m ago</p>
+</div>
+<nav class="flex-1 space-y-1">
+<button class="w-full flex items-center gap-3 px-3 py-2.5 bg-white shadow-sm border-l-4 border-blue-600 rounded-r-lg text-blue-600 transition-transform duration-200 hover:translate-x-1">
+<span class="material-symbols-outlined" data-icon="database">database</span>
+<span>All Entries</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-200 transition-transform duration-200 hover:translate-x-1">
+<span class="material-symbols-outlined" data-icon="star">star</span>
+<span>Favorites</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-200 transition-transform duration-200 hover:translate-x-1">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+<span>Social Media</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-200 transition-transform duration-200 hover:translate-x-1">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Bank Accounts</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-200 transition-transform duration-200 hover:translate-x-1">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+<span>Trash</span>
+</button>
+</nav>
+<div class="mt-auto space-y-4">
+<button class="cta-gradient w-full py-3 rounded-lg text-white font-semibold shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-95">
+<span class="material-symbols-outlined" data-icon="key">key</span>
+<span>Generate Password</span>
+</button>
+<div class="pt-4 border-t border-outline-variant/30">
+<button class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-900 transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-900 transition-colors">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+<span>Lock Vault</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Main Dashboard Canvas -->
+<div class="col-span-9 bg-surface overflow-y-auto p-12 custom-scrollbar">
+<div class="max-w-4xl mx-auto">
+<header class="mb-12">
+<h1 class="text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-2">Welcome Back</h1>
+<p class="text-on-surface-variant text-lg">Your encrypted local sanctuary is ready.</p>
+</header>
+<div class="grid grid-cols-2 gap-8 mb-12">
+<!-- Recent Vaults -->
+<section>
+<div class="flex items-center justify-between mb-4 px-1">
+<h3 class="font-headline font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="folder_open">folder_open</span>
+                                Recent Vaults
+                            </h3>
+</div>
+<div class="space-y-3">
+<div class="group bg-surface-container-lowest p-4 rounded-xl shadow-[0px_12px_32px_rgba(0,28,55,0.06)] hover:bg-white transition-all cursor-pointer border border-transparent hover:border-primary/20">
+<div class="flex items-center justify-between">
+<div>
+<p class="font-semibold text-on-surface">Personal Vault.mmp</p>
+<p class="text-xs text-on-surface-variant mt-0.5">Opened 3 days ago • Local Storage</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+<div class="group bg-surface-container-lowest p-4 rounded-xl shadow-[0px_12px_32px_rgba(0,28,55,0.06)] hover:bg-white transition-all cursor-pointer border border-transparent hover:border-primary/20">
+<div class="flex items-center justify-between">
+<div>
+<p class="font-semibold text-on-surface">Work Credentials.mmp</p>
+<p class="text-xs text-on-surface-variant mt-0.5">Opened 1 week ago • Encrypted Disk</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+</section>
+<!-- GitHub Vaults -->
+<section>
+<div class="flex items-center justify-between mb-4 px-1">
+<h3 class="font-headline font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary" data-icon="cloud_sync">cloud_sync</span>
+                                GitHub Vaults
+                            </h3>
+</div>
+<div class="space-y-3">
+<div class="group bg-surface-container-lowest p-4 rounded-xl shadow-[0px_12px_32px_rgba(0,28,55,0.06)] hover:bg-white transition-all cursor-pointer border border-transparent hover:border-tertiary/20">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center">
+<img alt="GitHub Logo" class="w-6 h-6 opacity-80" data-alt="Minimalist GitHub octocat logo icon in dark gray silhouette on a neutral light background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQL63e2fhTsrZqg3-K4K62YVxor06vN-HoEnsAtj4Ljbt8bbu0GbdOYWf1UgFiRYIVOtGhvvBWdV3Zj6_WtzbR0IXO_Bnm8GmyykaZQbmC-kxlMWV46shLwJtZKT7KV-seRV3fqEtrUTe42x4WndScN3iptl5qi2oVPPwEIGgAxFfavxZBiWX3QpBGz7xmfVzHjoPaU5FpHSFfYMkueUMAfliq_UUj9-OruVzVGF1hte7QsTRsQiSmEI8CeZwWiv5Tja0bM-7WnAPJ"/>
+</div>
+<div>
+<p class="font-semibold text-on-surface">my-password-vault (main)</p>
+<p class="text-xs text-on-surface-variant mt-0.5">Synced 1 hour ago • Repository</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-tertiary transition-colors" data-icon="sync">sync</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Action Cards -->
+<div class="grid grid-cols-3 gap-6 mb-12">
+<button class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-primary/5 hover:bg-primary/10 transition-all group border border-primary/10">
+<div class="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</div>
+<span class="font-headline font-bold text-primary">New Vault</span>
+</button>
+<button class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-secondary-container/20 hover:bg-secondary-container/40 transition-all group border border-secondary-container/20">
+<div class="w-14 h-14 rounded-full bg-secondary flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl" data-icon="folder_open">folder_open</span>
+</div>
+<span class="font-headline font-bold text-secondary">Open Local File</span>
+</button>
+<button class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-surface-container-highest hover:bg-surface-container-high transition-all group border border-outline-variant/30">
+<div class="w-14 h-14 rounded-full bg-on-surface flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl" data-icon="link">link</span>
+</div>
+<span class="font-headline font-bold text-on-surface">Connect GitHub</span>
+</button>
+</div>
+<!-- Option Toggle -->
+<div class="flex items-center gap-3 p-4 bg-surface-container-low rounded-lg border border-transparent">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary-container bg-surface-container-lowest" id="open-last" type="checkbox"/>
+<label class="text-sm font-medium text-on-surface-variant cursor-pointer select-none" for="open-last">Open last used vault on startup</label>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer (Shared Component Logic) -->
+<footer class="fixed bottom-0 w-full flex justify-between items-center px-4 z-50 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 h-8 font-inter text-xs tracking-wide uppercase">
+<div class="flex items-center gap-4">
+<span class="text-emerald-600 dark:text-emerald-400 font-bold">Status: Secure</span>
+<div class="h-3 w-px bg-outline-variant"></div>
+<span class="text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer">GitHub Connection</span>
+</div>
+<div class="text-slate-400 dark:text-slate-500">
+            v2.4.0 | ✓ Auto-saved
+        </div>
+</footer>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e2e2;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #dadada;
+        }
+    </style>
+</body></html>

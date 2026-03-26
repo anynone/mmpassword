@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed": "#271900",
+                        "surface-container-high": "#e8e8e8",
+                        "inverse-surface": "#2f3131",
+                        "primary-fixed-dim": "#a0caff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#4a617d",
+                        "surface-dim": "#dadada",
+                        "on-primary-container": "#fdfcff",
+                        "error": "#ba1a1a",
+                        "secondary": "#49607d",
+                        "surface-container": "#eeeeee",
+                        "on-tertiary-fixed-variant": "#5f4100",
+                        "on-secondary-fixed": "#011d36",
+                        "on-error": "#ffffff",
+                        "on-background": "#1a1c1c",
+                        "tertiary": "#7b5500",
+                        "surface-container-low": "#f3f3f3",
+                        "on-error-container": "#93000a",
+                        "surface": "#f9f9f9",
+                        "background": "#f9f9f9",
+                        "tertiary-container": "#9a6c00",
+                        "inverse-primary": "#a0caff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#1a1c1c",
+                        "outline-variant": "#c1c7d2",
+                        "secondary-fixed": "#d2e4ff",
+                        "secondary-fixed-dim": "#b1c8e9",
+                        "on-secondary-fixed-variant": "#314864",
+                        "on-surface-variant": "#414751",
+                        "surface-bright": "#f9f9f9",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary-fixed-variant": "#00497e",
+                        "primary-container": "#2b78bf",
+                        "primary": "#005ea1",
+                        "tertiary-fixed": "#ffdeab",
+                        "surface-tint": "#0061a5",
+                        "on-primary": "#ffffff",
+                        "outline": "#717782",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-tertiary-container": "#fffbff",
+                        "inverse-on-surface": "#f1f1f1",
+                        "primary-fixed": "#d2e4ff",
+                        "on-primary-fixed": "#001c37",
+                        "secondary-container": "#c4dcfe",
+                        "tertiary-fixed-dim": "#fbbb45"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .bg-cta-gradient {
+            background: linear-gradient(135deg, #005ea1 0%, #2b78bf 100%);
+        }
+        .ghost-border {
+            outline: 1px solid rgba(113, 119, 130, 0.15);
+        }
+        input:focus {
+            outline: 2px solid rgba(0, 97, 165, 0.4) !important;
+            background-color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar (Shared Component) -->
+<nav class="flex items-center justify-between px-6 py-2 w-full fixed top-0 z-50 bg-surface/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm dark:shadow-none font-manrope font-semibold text-sm tracking-tight">
+<div class="flex items-center gap-8">
+<span class="text-lg font-extrabold tracking-tighter text-slate-900 dark:text-slate-100">mmpassword</span>
+<div class="hidden md:flex gap-4">
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">File</a>
+<a class="text-blue-600 dark:text-blue-400 font-bold border-b-2 border-blue-600 px-2 py-1" href="#">Edit</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">Groups</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">Items</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">Tools</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">View</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 px-2 py-1 rounded" href="#">Help</a>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-all active:opacity-80 scale-98">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+</button>
+<button class="p-2 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-all active:opacity-80 scale-98">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</nav>
+<!-- SideNavBar (Shared Component) -->
+<aside class="hidden md:flex flex-col h-screen pt-16 pb-8 px-3 w-64 fixed left-0 top-0 bg-slate-50 dark:bg-slate-950 font-inter text-sm font-medium z-40">
+<div class="px-3 mb-6">
+<h2 class="text-xl font-bold text-slate-900 dark:text-white mb-1">Personal Vault</h2>
+<p class="text-xs text-slate-500">Last synced: 2m ago</p>
+</div>
+<nav class="flex-1 space-y-1">
+<button class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="database">database</span>
+<span>All Entries</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="star">star</span>
+<span>Favorites</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2 bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border-l-4 border-blue-600 rounded-r-lg">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+<span>Social Media</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Bank Accounts</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+<span>Trash</span>
+</button>
+</nav>
+<div class="mt-auto space-y-4">
+<button class="w-full bg-cta-gradient text-white py-2.5 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all active:scale-95">
+                Generate Password
+            </button>
+<div class="space-y-1">
+<button class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800/50">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800/50">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+<span>Lock Vault</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Area: Edit Mode -->
+<main class="md:ml-64 pt-12 pb-20 min-h-screen bg-surface">
+<!-- Header Panel -->
+<header class="sticky top-12 z-40 flex items-center justify-between px-8 py-6 bg-surface/90 backdrop-blur-md">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="public">public</span>
+</div>
+<div>
+<h1 class="font-headline font-extrabold text-2xl tracking-tight text-on-surface">Edit Entry: Google</h1>
+<p class="text-sm text-on-surface-variant font-medium">Modified 2 days ago</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant font-semibold">
+<span class="material-symbols-outlined" data-icon="star">star</span>
+                    Favorite
+                </button>
+<button class="bg-cta-gradient text-white flex items-center gap-2 px-5 py-2 rounded-lg font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="save">save</span>
+                    Save
+                </button>
+<button class="p-2 rounded-full hover:bg-error-container hover:text-on-error-container transition-colors ml-2">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+</header>
+<!-- Form Canvas -->
+<div class="max-w-4xl mx-auto px-8 py-4 space-y-8">
+<!-- Section 1: Basic Information -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 text-primary font-headline font-bold text-sm tracking-widest uppercase">
+<span class="material-symbols-outlined text-lg" data-icon="info">info</span>
+                    Basic Information
+                </div>
+<div class="grid grid-cols-2 gap-6 p-6 bg-surface-container-lowest rounded-xl shadow-sm ghost-border">
+<div class="space-y-2">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Title</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-0 font-medium" type="text" value="Google"/>
+</div>
+<div class="space-y-2">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Type</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-0 font-medium appearance-none">
+<option>Website Login</option>
+<option>Secure Note</option>
+<option>Credit Card</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Group</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-0 font-medium" type="text" value="Social Media"/>
+</div>
+<div class="space-y-2">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tags</label>
+<div class="flex flex-wrap gap-2 pt-1">
+<span class="px-3 py-1 bg-primary-fixed text-on-primary-fixed-variant rounded-full text-xs font-bold flex items-center gap-1">
+                                Important <span class="material-symbols-outlined text-sm cursor-pointer" data-icon="close">close</span>
+</span>
+<span class="px-3 py-1 bg-primary-fixed text-on-primary-fixed-variant rounded-full text-xs font-bold flex items-center gap-1">
+                                Work <span class="material-symbols-outlined text-sm cursor-pointer" data-icon="close">close</span>
+</span>
+<button class="px-3 py-1 border border-dashed border-outline rounded-full text-xs font-medium text-on-surface-variant hover:bg-surface-container-high transition-colors">
+                                + Add Tag
+                            </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Login Credentials -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 text-primary font-headline font-bold text-sm tracking-widest uppercase">
+<span class="material-symbols-outlined text-lg" data-icon="key">key</span>
+                    Login Credentials
+                </div>
+<div class="p-6 bg-surface-container-lowest rounded-xl shadow-sm ghost-border space-y-6">
+<div class="space-y-2">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Website URL</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border-none rounded-lg pl-4 pr-10 py-3 focus:ring-0 font-medium" type="text" value="google.com"/>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant cursor-pointer" data-icon="open_in_new">open_in_new</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Username</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-0 font-medium" type="text" value="user@gmail.com"/>
+</div>
+<div class="space-y-2">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Password</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border-none rounded-lg pl-4 pr-32 py-3 focus:ring-0 font-medium tracking-widest" type="password" value="password123"/>
+<div class="absolute right-2 top-1.5 flex gap-1">
+<button class="p-1.5 hover:bg-surface-container-high rounded text-on-surface-variant" title="Show Password">
+<span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
+</button>
+<button class="p-1.5 hover:bg-surface-container-high rounded text-on-surface-variant" title="Generate">
+<span class="material-symbols-outlined text-xl" data-icon="refresh">refresh</span>
+</button>
+<button class="p-1.5 hover:bg-surface-container-high rounded text-on-surface-variant" title="History">
+<span class="material-symbols-outlined text-xl" data-icon="history">history</span>
+</button>
+</div>
+</div>
+<div class="pt-2">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] font-bold text-primary tracking-widest uppercase">Security Strength</span>
+<span class="text-[10px] font-bold text-primary tracking-widest uppercase">Very Strong</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden flex gap-0.5">
+<div class="h-full flex-1 bg-primary"></div>
+<div class="h-full flex-1 bg-primary"></div>
+<div class="h-full flex-1 bg-primary"></div>
+<div class="h-full flex-1 bg-primary"></div>
+<div class="h-full flex-1 bg-primary"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: One-Time Password (OTP) -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 text-primary font-headline font-bold text-sm tracking-widest uppercase">
+<span class="material-symbols-outlined text-lg" data-icon="vibration">vibration</span>
+                    Two-Factor Auth (OTP)
+                </div>
+<div class="p-6 bg-surface-container-lowest rounded-xl shadow-sm ghost-border flex items-center gap-4">
+<div class="flex-1 space-y-2">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Secret Key / URI</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-0 font-medium font-mono text-xs" type="text" value="otpauth://totp/Google:user@gmail.com?secret=JBSWY3DPEHPK3PXP"/>
+</div>
+<div class="flex gap-2 self-end">
+<button class="flex items-center gap-2 px-4 py-3 bg-surface-container-high rounded-lg font-bold text-on-surface hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="photo_camera">photo_camera</span>
+                            Scan QR
+                        </button>
+<button class="flex items-center gap-2 px-4 py-3 bg-surface-container-high rounded-lg font-bold text-on-surface hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="keyboard">keyboard</span>
+                            Manual
+                        </button>
+</div>
+</div>
+</section>
+<!-- Asymmetric Layout for Secondary Info -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-8">
+<!-- Section 4: Custom Fields (3/5 width) -->
+<section class="md:col-span-3 space-y-4">
+<div class="flex items-center gap-2 text-primary font-headline font-bold text-sm tracking-widest uppercase">
+<span class="material-symbols-outlined text-lg" data-icon="tune">tune</span>
+                        Custom Fields
+                    </div>
+<div class="p-6 bg-surface-container-lowest rounded-xl shadow-sm ghost-border space-y-4">
+<div class="space-y-2">
+<div class="flex justify-between">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Backup Email</label>
+<span class="material-symbols-outlined text-sm text-outline cursor-pointer" data-icon="delete">delete</span>
+</div>
+<input class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-0 font-medium" type="text" value="backup@email.com"/>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between">
+<label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider">Security Question</label>
+<span class="material-symbols-outlined text-sm text-outline cursor-pointer" data-icon="delete">delete</span>
+</div>
+<input class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-0 font-medium" type="text" value="Mother's maiden name"/>
+</div>
+<button class="w-full py-3 border border-dashed border-outline-variant rounded-lg text-sm font-bold text-primary hover:bg-primary/5 transition-colors">
+                            + Add Custom Field
+                        </button>
+</div>
+</section>
+<!-- Section 5: Attachments (2/5 width) -->
+<section class="md:col-span-2 space-y-4">
+<div class="flex items-center gap-2 text-primary font-headline font-bold text-sm tracking-widest uppercase">
+<span class="material-symbols-outlined text-lg" data-icon="attach_file">attach_file</span>
+                        Attachments
+                    </div>
+<div class="p-4 bg-surface-container-lowest rounded-xl shadow-sm ghost-border space-y-3">
+<div class="group flex items-center justify-between p-3 bg-surface rounded-lg hover:bg-surface-container-low transition-colors border border-transparent hover:border-outline-variant">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+<div>
+<p class="text-sm font-bold truncate max-w-[120px]">Security_Cert.pdf</p>
+<p class="text-[10px] text-on-surface-variant font-medium uppercase">128 KB</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-error cursor-pointer transition-colors" data-icon="close">close</span>
+</div>
+<div class="group flex items-center justify-between p-3 bg-surface rounded-lg hover:bg-surface-container-low transition-colors border border-transparent hover:border-outline-variant">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="image">image</span>
+<div>
+<p class="text-sm font-bold truncate max-w-[120px]">Recovery_Code.png</p>
+<p class="text-[10px] text-on-surface-variant font-medium uppercase">45 KB</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-error cursor-pointer transition-colors" data-icon="close">close</span>
+</div>
+<button class="w-full py-4 bg-surface-container-low rounded-lg text-xs font-extrabold text-on-surface-variant flex flex-col items-center gap-1 hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                            ATTACH FILE
+                        </button>
+</div>
+</section>
+</div>
+<!-- Section 6: Notes -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 text-primary font-headline font-bold text-sm tracking-widest uppercase">
+<span class="material-symbols-outlined text-lg" data-icon="notes">notes</span>
+                    Notes &amp; Recovery
+                </div>
+<div class="p-6 bg-surface-container-lowest rounded-xl shadow-sm ghost-border">
+<textarea class="w-full bg-surface-container-low border-none rounded-lg px-4 py-4 focus:ring-0 font-medium text-sm resize-none leading-relaxed" placeholder="Add secure notes here..." rows="4">Recovery codes stored in a safe place. Backup email verified.</textarea>
+</div>
+</section>
+</div>
+<!-- Sticky Footer Buttons -->
+<footer class="fixed bottom-0 right-0 left-0 md:left-64 bg-surface-container-lowest/80 backdrop-blur-xl border-t border-surface-container-highest px-8 py-4 flex justify-end items-center gap-4 z-50">
+<button class="px-6 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container-high transition-colors">
+                Cancel
+            </button>
+<button class="bg-cta-gradient px-8 py-2.5 rounded-lg text-white font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all active:scale-95">
+                Save Changes
+            </button>
+</footer>
+</main>
+<!-- Shared Footer (Copyright/Status) -->
+<footer class="fixed bottom-0 w-full flex justify-between items-center px-4 z-[60] bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 h-8 font-inter text-xs tracking-wide uppercase pointer-events-none">
+<div class="flex gap-4 pointer-events-auto">
+<span class="text-emerald-600 dark:text-emerald-400 font-bold">Status: Secure</span>
+<a class="text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">GitHub Connection</a>
+</div>
+<div class="text-slate-400 dark:text-slate-500">
+            v2.4.0 | ✓ Auto-saved
+        </div>
+</footer>
+</body></html>

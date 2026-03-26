@@ -1,0 +1,69 @@
+[package]
+name = "mmpassword"
+version = "0.1.0"
+description = "A secure local password manager"
+authors = ["mmpassword"]
+edition = "2021"
+
+[lib]
+name = "mmpassword_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Tauri
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-opener = "2"
+
+# Async Runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Cryptography
+argon2 = { version = "0.5", features = ["std"] }
+chacha20poly1305 = "0.10"
+rand = "0.8"
+rand_chacha = "0.3"
+zeroize = { version = "1.8", features = ["derive"] }
+
+# Data Types
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error Handling
+thiserror = "1"
+anyhow = "1"
+
+# Concurrency
+parking_lot = "0.12"
+
+# File System
+dirs = "5"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Secure token storage
+keyring = "2"
+
+# Hash utilities
+sha2 = "0.10"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

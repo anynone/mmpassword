@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>New Vault | mmpassword</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "inverse-primary": "#a0caff",
+                        "surface-tint": "#0061a5",
+                        "outline": "#717782",
+                        "tertiary-fixed": "#ffdeab",
+                        "surface-variant": "#e2e2e2",
+                        "outline-variant": "#c1c7d2",
+                        "on-background": "#1a1c1c",
+                        "secondary": "#49607d",
+                        "surface": "#f9f9f9",
+                        "on-tertiary-container": "#fffbff",
+                        "on-tertiary-fixed": "#271900",
+                        "secondary-fixed": "#d2e4ff",
+                        "secondary-fixed-dim": "#b1c8e9",
+                        "secondary-container": "#c4dcfe",
+                        "surface-container-low": "#f3f3f3",
+                        "surface-bright": "#f9f9f9",
+                        "on-primary-fixed": "#001c37",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e8e8e8",
+                        "on-tertiary-fixed-variant": "#5f4100",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#dadada",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#eeeeee",
+                        "primary": "#005ea1",
+                        "background": "#f9f9f9",
+                        "tertiary-fixed-dim": "#fbbb45",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#2f3131",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#1a1c1c",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#00497e",
+                        "primary-fixed": "#d2e4ff",
+                        "primary-container": "#2b78bf",
+                        "on-secondary-container": "#4a617d",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-surface-variant": "#414751",
+                        "inverse-on-surface": "#f1f1f1",
+                        "primary-fixed-dim": "#a0caff",
+                        "on-primary-container": "#fdfcff",
+                        "on-secondary-fixed": "#011d36",
+                        "tertiary-container": "#9a6c00",
+                        "on-secondary-fixed-variant": "#314864",
+                        "tertiary": "#7b5500"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .bg-primary-gradient {
+            background: linear-gradient(135deg, #005ea1 0%, #2b78bf 100%);
+        }
+        .ghost-border {
+            outline: 1px solid rgba(193, 199, 210, 0.15);
+        }
+        .glass-header {
+            background: rgba(249, 249, 249, 0.8);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased overflow-hidden">
+<!-- Top Navigation Bar -->
+<nav class="flex items-center justify-between px-6 py-2 w-full fixed top-0 z-50 bg-surface/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm dark:shadow-none">
+<div class="flex items-center gap-8">
+<span class="text-lg font-extrabold tracking-tighter text-slate-900 dark:text-slate-100 font-headline">mmpassword</span>
+<div class="hidden md:flex gap-6">
+<a class="font-manrope font-semibold text-sm tracking-tight text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 py-1 px-2 rounded" href="#">File</a>
+<a class="font-manrope font-semibold text-sm tracking-tight text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 py-1 px-2 rounded" href="#">Edit</a>
+<a class="font-manrope font-semibold text-sm tracking-tight text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 py-1 px-2 rounded" href="#">Groups</a>
+<a class="font-manrope font-semibold text-sm tracking-tight text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 py-1 px-2 rounded" href="#">Items</a>
+<a class="font-manrope font-semibold text-sm tracking-tight text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 py-1 px-2 rounded" href="#">Tools</a>
+<a class="font-manrope font-semibold text-sm tracking-tight text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 py-1 px-2 rounded" href="#">View</a>
+<a class="font-manrope font-semibold text-sm tracking-tight text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 py-1 px-2 rounded" href="#">Help</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 rounded-lg transition-all scale-98 active:opacity-80">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+</button>
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 rounded-lg transition-all scale-98 active:opacity-80">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</nav>
+<!-- App Shell Container (Suppressed Navigation for Focused Task) -->
+<main class="min-h-screen pt-12 flex items-center justify-center bg-surface-container-low p-4 relative overflow-hidden">
+<!-- Background Decorative Elements -->
+<div class="absolute inset-0 z-0 opacity-20 pointer-events-none">
+<div class="absolute top-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-primary rounded-full blur-[120px]"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[30rem] h-[30rem] bg-secondary rounded-full blur-[100px]"></div>
+</div>
+<!-- New Vault Modal -->
+<div class="relative z-10 w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-[0px_12px_32px_rgba(0,28,55,0.06)] ghost-border overflow-hidden flex flex-col">
+<!-- Modal Header -->
+<div class="px-8 py-6 glass-header border-b border-outline-variant/10">
+<h1 class="font-headline font-bold text-2xl tracking-tight text-on-surface">New Vault</h1>
+<p class="font-body text-sm text-on-surface-variant mt-1">Initialize a secure, encrypted storage container for your credentials.</p>
+</div>
+<!-- Modal Scrollable Content -->
+<div class="p-8 space-y-10 overflow-y-auto max-h-[716px]">
+<!-- Section 1: Vault Information -->
+<section class="space-y-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="info">info</span>
+<h2 class="font-headline font-semibold text-lg text-on-surface">Vault Information</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">Vault Name</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-lowest transition-all duration-200 outline-none" placeholder="e.g. Work Portfolio" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">Save Location</label>
+<div class="flex gap-2">
+<input class="flex-grow bg-surface-container-highest border-none rounded-lg px-4 py-3 text-on-surface-variant text-sm truncate focus:outline-none cursor-default" placeholder="C:/Users/Security/Vaults/" readonly="" type="text"/>
+<button class="px-4 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold text-sm rounded-lg transition-all duration-200">
+                                    Browse
+                                </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Set Master Password -->
+<section class="space-y-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="lock_open">lock_open</span>
+<h2 class="font-headline font-semibold text-lg text-on-surface">Set Master Password</h2>
+</div>
+<div class="space-y-4">
+<div class="space-y-2 relative">
+<label class="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">Master Password</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-lowest transition-all duration-200 outline-none tracking-widest text-lg" placeholder="••••••••••••" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">Confirm Password</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-lowest transition-all duration-200 outline-none tracking-widest text-lg" placeholder="••••••••••••" type="password"/>
+</div>
+<!-- Password Strength Bar -->
+<div class="pt-2 space-y-2">
+<div class="flex justify-between items-center px-1">
+<span class="font-label text-xs font-medium text-on-surface-variant">Password Strength</span>
+<span class="text-xs font-bold text-primary px-2 py-0.5 bg-primary-fixed rounded-full">Secure</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden flex gap-1">
+<div class="h-full w-1/4 bg-primary rounded-full"></div>
+<div class="h-full w-1/4 bg-primary rounded-full"></div>
+<div class="h-full w-1/4 bg-primary rounded-full"></div>
+<div class="h-full w-[10%] bg-surface-container-highest rounded-full"></div>
+</div>
+<p class="text-[10px] text-on-surface-variant italic px-1">Tip: Use at least 12 characters with mixed symbols and numbers.</p>
+</div>
+</div>
+</section>
+<!-- Security Feature Card (Added for High-end UI feel) -->
+<div class="p-4 bg-surface-container rounded-lg flex items-start gap-4">
+<div class="w-10 h-10 rounded-full bg-on-primary-fixed-variant/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-primary-fixed-variant" data-icon="verified_user">verified_user</span>
+</div>
+<div class="space-y-1">
+<p class="text-sm font-semibold text-on-surface">Zero-Knowledge Encryption</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">Your master password is never stored on our servers. If lost, the vault cannot be recovered. Ensure you keep a physical backup of your master key.</p>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="px-8 py-6 bg-surface-container-low border-t border-outline-variant/10 flex items-center justify-end gap-4">
+<button class="px-6 py-2.5 font-label font-semibold text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-200">
+                    Cancel
+                </button>
+<button class="px-8 py-2.5 bg-primary-gradient text-on-primary font-label font-bold text-sm rounded-lg shadow-md hover:shadow-lg active:scale-[0.98] transition-all duration-200">
+                    Create Vault
+                </button>
+</div>
+</div>
+</main>
+<!-- Footer Status Bar -->
+<footer class="fixed bottom-0 w-full flex justify-between items-center px-4 z-50 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 h-8">
+<div class="flex gap-4">
+<span class="font-inter text-xs tracking-wide uppercase text-emerald-600 dark:text-emerald-400 font-bold">Status: Secure</span>
+<span class="font-inter text-xs tracking-wide uppercase text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors duration-200 cursor-pointer">GitHub Connection</span>
+</div>
+<div class="font-inter text-xs tracking-wide uppercase text-slate-400 dark:text-slate-500">
+            v2.4.0 | ✓ Auto-saved
+        </div>
+</footer>
+</body></html>
