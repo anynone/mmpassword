@@ -652,6 +652,57 @@ impl GitOperations {
             Err(e) => Err(AppError::GitError(format!("Failed to run git ls-remote: {}", e))),
         }
     }
+
+    /// List all vault files (.mmp) in the repository
+    pub async fn list_vault_files(&self, repo_dir: &Path) -> Result<Vec<String>> {
+        let mut vault_files = Vec::new();
+        self.list_vault_files_recursive(repo_dir, "", &mut vault_files).await?;
+        vault_files.sort();
+        Ok(vault_files)
+    }
+
+    /// Recursively scan directory for .mmp files
+    async fn list_vault_files_recursive(
+        &self,
+        current_dir: &Path,
+        relative_path: &str,
+        vault_files: &mut Vec<String>,
+    ) -> Result<()> {
+        let mut entries = tokio::fs::read_dir(current_dir)
+            .await
+            .map_err(|e| AppError::Io(e))?;
+
+        while let Some(entry) = entries.next_entry().await.map_err(|e| AppError::Io(e))? {
+            let file_name = entry.file_name().to_string_lossy().to_string();
+            let entry_path = entry.path();
+
+            // Skip hidden directories and .git directory
+            if file_name.starts_with('.') {
+                continue;
+            }
+
+            let relative_file_path = if relative_path.is_empty() {
+                file_name.clone()
+            } else {
+                format!("{}/{}", relative_path, file_name)
+            };
+
+            if entry_path.is_dir() {
+                // Recurse into subdirectories
+                Box::pin(self.list_vault_files_recursive(
+                    &entry_path,
+                    &relative_file_path,
+                    vault_files,
+                ))
+                .await?;
+            } else if file_name.ends_with(".mmp") {
+                // Found a vault file
+                vault_files.push(relative_file_path);
+            }
+        }
+
+        Ok(())
+    }
 }
 
 /// Infer key type from filename

@@ -77,12 +77,17 @@ pub fn run() {
             commands::git_config::save_git_repository_config,
             commands::git_config::get_git_repository_config,
             // Git vault commands
+            commands::git_vault::list_git_vaults,
             commands::git_vault::git_vault_exists,
             commands::git_vault::create_git_vault,
             commands::git_vault::open_git_vault,
             commands::git_vault::save_git_vault,
             commands::git_vault::sync_git_vault,
             commands::git_vault::get_git_sync_status,
+            // Git repo management commands
+            commands::vault::get_recent_git_repos,
+            commands::vault::add_recent_git_repo,
+            commands::vault::remove_recent_git_repo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

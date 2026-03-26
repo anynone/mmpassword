@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
 import { useVaultStore } from "../../stores/vaultStore";
-import type { VaultMeta } from "../../types";
+import type { VaultMeta, GitRepoMeta } from "../../types";
 import { GitRepoSetup } from "../git/GitRepoSetup";
 
 interface WelcomeScreenProps {
@@ -31,20 +32,31 @@ export function WelcomeScreen({
   onCreateGitVault,
 }: WelcomeScreenProps) {
   const [recentVaults, setRecentVaults] = useState<VaultMeta[]>([]);
+  const [recentGitRepos, setRecentGitRepos] = useState<GitRepoMeta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showGitSetup, setShowGitSetup] = useState(false);
+  const [selectedGitRepo, setSelectedGitRepo] = useState<GitRepoMeta | null>(null);
 
   const { getRecentVaults } = useVaultStore();
 
   useEffect(() => {
-    loadRecentVaults();
+    loadRecentData();
   }, []);
 
-  const loadRecentVaults = async () => {
+  const loadRecentData = async () => {
     setIsLoading(true);
-    const vaults = await getRecentVaults();
-    setRecentVaults(vaults);
-    setIsLoading(false);
+    try {
+      const vaults = await getRecentVaults();
+      setRecentVaults(vaults);
+
+      // Load recent git repos
+      const gitRepos = await invoke<GitRepoMeta[]>("get_recent_git_repos");
+      setRecentGitRepos(gitRepos);
+    } catch (error) {
+      console.error("Failed to load recent data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOpenFile = async () => {
@@ -163,6 +175,41 @@ export function WelcomeScreen({
             )}
           </section>
 
+          {/* Recent Git Repositories */}
+          {recentGitRepos.length > 0 && (
+            <section className="mb-12">
+              <h3 className="font-headline font-bold text-on-surface flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-primary">cloud_sync</span>
+                Recent Git Repositories
+              </h3>
+              <div className="space-y-3">
+                {recentGitRepos.map((repo) => (
+                  <button
+                    key={`${repo.repoUrl}-${repo.branch}`}
+                    onClick={() => {
+                      // Set the selected repo and show git setup
+                      setSelectedGitRepo(repo);
+                      setShowGitSetup(true);
+                    }}
+                    className="w-full group bg-surface-container-lowest p-4 rounded-xl shadow-ambient hover:bg-white transition-all cursor-pointer border border-transparent hover:border-primary/20 text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-on-surface">{repo.repoName}</p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
+                          {repo.branch} • {formatLastAccessed(repo.lastAccessed)}
+                        </p>
+                      </div>
+                      <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">
+                        chevron_right
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Action Cards */}
           <div className="grid grid-cols-3 gap-6 mb-12">
             <button
@@ -227,7 +274,11 @@ export function WelcomeScreen({
           <div className="bg-surface rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl">
             <GitRepoSetup
               onComplete={handleGitSetupComplete}
-              onBack={() => setShowGitSetup(false)}
+              onBack={() => {
+                setShowGitSetup(false);
+                setSelectedGitRepo(null);
+              }}
+              initialRepo={selectedGitRepo}
             />
           </div>
         </div>
