@@ -5,15 +5,13 @@ import type { GitAccessValidation } from "../../types/git";
 
 interface RepoConfigProps {
   sshKeyPath: string;
-  onConfigured: (repoUrl: string, branch: string, vaultPath: string) => void;
-  onBack: () => void;
+  onConfigured: (repoUrl: string, branch: string) => void;
 }
 
-export function RepoConfig({ sshKeyPath, onConfigured, onBack }: RepoConfigProps) {
+export function RepoConfig({ sshKeyPath, onConfigured }: RepoConfigProps) {
   const { showToast } = useToast();
   const [repoUrl, setRepoUrl] = useState("");
   const [branch, setBranch] = useState("main");
-  const [vaultPath, setVaultPath] = useState("vault.mmp");
   const [isValidating, setIsValidating] = useState(false);
   const [validation, setValidation] = useState<GitAccessValidation | null>(null);
 
@@ -60,7 +58,7 @@ export function RepoConfig({ sshKeyPath, onConfigured, onBack }: RepoConfigProps
       showToast("error", "Please validate repository access first");
       return;
     }
-    onConfigured(repoUrl, branch, vaultPath);
+    onConfigured(repoUrl, branch);
   };
 
   return (
@@ -89,19 +87,6 @@ export function RepoConfig({ sshKeyPath, onConfigured, onBack }: RepoConfigProps
           placeholder="main"
           className="w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-sm border border-outline-variant focus:border-primary focus:outline-none"
         />
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-on-surface">Vault file path:</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={vaultPath.replace(/\.mmp$/, "")}
-            onChange={(e) => setVaultPath(e.target.value + ".mmp")}
-            className="flex-1 px-3 py-2 bg-surface-container-lowest rounded-lg text-sm border border-outline-variant focus:border-primary focus:outline-none"
-          />
-          <span className="text-sm text-on-surface-variant">.mmp</span>
-        </div>
       </div>
 
       <button

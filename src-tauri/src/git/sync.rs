@@ -196,6 +196,12 @@ impl GitSyncEngine {
             .await
     }
 
+    /// List all vault files in the repository
+    pub async fn list_vaults(&self) -> Result<Vec<String>> {
+        self.ensure_cloned().await?;
+        self.git_ops.list_vault_files(&self.clone_dir).await
+    }
+
     /// Determine sync status
     pub async fn get_sync_status(&self, local_hash: &str) -> Result<SyncStatus> {
         self.ensure_cloned().await?;

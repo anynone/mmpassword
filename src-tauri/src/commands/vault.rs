@@ -6,7 +6,7 @@ use tauri::State;
 
 use crate::crypto::{derive_key, generate_salt, KdfParams};
 use crate::error::{AppError, Result};
-use crate::models::{Vault, VaultMeta};
+use crate::models::{GitRepoMeta, Vault, VaultMeta};
 use crate::state::AppState;
 use crate::storage::{create_vault_file_with_key, open_vault_file_with_key, AppConfig};
 
@@ -191,5 +191,42 @@ pub async fn update_config(
     let mut current_config = state.config.write().await;
     *current_config = config;
     let _ = current_config.save();
+    Ok(())
+}
+
+/// Get recent Git repositories
+#[tauri::command]
+pub async fn get_recent_git_repos(
+    state: State<'_, AppState>,
+) -> Result<Vec<GitRepoMeta>> {
+    let config = state.config.read().await;
+    Ok(config.recent_git_repos.clone())
+}
+
+/// Add Git repository to recent list
+#[tauri::command]
+pub async fn add_recent_git_repo(
+    repo_url: String,
+    branch: String,
+    key_path: String,
+    state: State<'_, AppState>,
+) -> Result<()> {
+    let mut config = state.config.write().await;
+    let meta = GitRepoMeta::new(repo_url, branch, key_path);
+    config.add_recent_git_repo(meta);
+    let _ = config.save();
+    Ok(())
+}
+
+/// Remove Git repository from recent list
+#[tauri::command]
+pub async fn remove_recent_git_repo(
+    repo_url: String,
+    branch: String,
+    state: State<'_, AppState>,
+) -> Result<()> {
+    let mut config = state.config.write().await;
+    config.remove_recent_git_repo(&repo_url, &branch);
+    let _ = config.save();
     Ok(())
 }

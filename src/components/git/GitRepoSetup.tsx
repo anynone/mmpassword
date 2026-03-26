@@ -1,39 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SshKeyConfig } from "./SshKeyConfig";
 import { RepoConfig } from "./RepoConfig";
 import { GitVaultSelect } from "./GitVaultSelect";
+import type { GitRepoMeta } from "../../types/git";
 
 type SetupStep = "ssh" | "repo" | "vault";
 
 interface GitRepoSetupProps {
   onComplete: (repoUrl: string, branch: string, vaultPath: string, keyPath: string, password: string, isNew: boolean, name?: string) => void;
   onBack: () => void;
+  initialRepo?: GitRepoMeta | null;
 }
 
-export function GitRepoSetup({ onComplete, onBack }: GitRepoSetupProps) {
-  const [step, setStep] = useState<SetupStep>("ssh");
-  const [sshKeyPath, setSshKeyPath] = useState<string>("");
+export function GitRepoSetup({ onComplete, onBack, initialRepo }: GitRepoSetupProps) {
+  const [step, setStep] = useState<SetupStep>(initialRepo ? "vault" : "ssh");
+  const [sshKeyPath, setSshKeyPath] = useState<string>(initialRepo?.keyPath || "");
   const [repoConfig, setRepoConfig] = useState<{
     url: string;
     branch: string;
-    vaultPath: string;
-  } | null>(null);
+  } | null>(initialRepo ? { url: initialRepo.repoUrl, branch: initialRepo.branch } : null);
+
+  // If initialRepo is provided, skip to vault selection step
+  useEffect(() => {
+    if (initialRepo) {
+      setSshKeyPath(initialRepo.keyPath);
+      setRepoConfig({ url: initialRepo.repoUrl, branch: initialRepo.branch });
+      setStep("vault");
+    }
+  }, [initialRepo]);
 
   const handleKeySelected = (keyPath: string) => {
     setSshKeyPath(keyPath);
   };
 
-  const handleRepoConfigured = (url: string, branch: string, vaultPath: string) => {
-    setRepoConfig({ url, branch, vaultPath });
+  const handleRepoConfigured = (url: string, branch: string) => {
+    setRepoConfig({ url, branch });
     setStep("vault");
   };
 
-  const handleOpenVault = (password: string) => {
+  const handleOpenVault = (vaultPath: string, password: string) => {
     if (repoConfig) {
       onComplete(
         repoConfig.url,
         repoConfig.branch,
-        repoConfig.vaultPath,
+        vaultPath,
         sshKeyPath,
         password,
         false
@@ -41,12 +51,12 @@ export function GitRepoSetup({ onComplete, onBack }: GitRepoSetupProps) {
     }
   };
 
-  const handleCreateVault = (name: string, password: string) => {
+  const handleCreateVault = (vaultPath: string, name: string, password: string) => {
     if (repoConfig) {
       onComplete(
         repoConfig.url,
         repoConfig.branch,
-        repoConfig.vaultPath,
+        vaultPath,
         sshKeyPath,
         password,
         true,
@@ -129,7 +139,6 @@ export function GitRepoSetup({ onComplete, onBack }: GitRepoSetupProps) {
           <RepoConfig
             sshKeyPath={sshKeyPath}
             onConfigured={handleRepoConfigured}
-            onBack={handleBackToSsh}
           />
         )}
 
@@ -137,11 +146,9 @@ export function GitRepoSetup({ onComplete, onBack }: GitRepoSetupProps) {
           <GitVaultSelect
             repoUrl={repoConfig.url}
             branch={repoConfig.branch}
-            vaultPath={repoConfig.vaultPath}
             keyPath={sshKeyPath}
             onOpenVault={handleOpenVault}
             onCreateVault={handleCreateVault}
-            onBack={handleBackToRepo}
           />
         )}
       </div>
