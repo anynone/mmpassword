@@ -34,7 +34,7 @@ impl GitRepoMeta {
 
     /// Extract repository name from URL
     fn extract_repo_name(url: &str) -> String {
-        // Handle SSH URL: git@github.com:user/repo.git
+        // Handle SSH shorthand: git@host:owner/repo.git
         if url.starts_with("git@") {
             if let Some(rest) = url.strip_prefix("git@") {
                 let parts: Vec<&str> = rest.splitn(2, ':').collect();
@@ -45,8 +45,8 @@ impl GitRepoMeta {
                 }
             }
         }
-        // Handle HTTPS URL: https://github.com/user/repo.git
-        else if url.starts_with("http") {
+        // Handle SSH protocol and HTTP(S): extract last path segment
+        else if url.starts_with("ssh://") || url.starts_with("http") {
             let path = url.strip_suffix(".git").unwrap_or(url);
             let path_parts: Vec<&str> = path.split('/').collect();
             return path_parts.last().unwrap_or(&"Unknown").to_string();

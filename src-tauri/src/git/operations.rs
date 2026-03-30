@@ -722,7 +722,7 @@ fn infer_key_type(filename: &str) -> String {
 
 /// Extract repository name from URL
 fn extract_repo_name(url: &str) -> Option<String> {
-    // Handle SSH URL: git@github.com:user/repo.git
+    // Handle SSH shorthand: git@host:owner/repo.git
     if url.starts_with("git@") {
         let rest = url.strip_prefix("git@")?;
         let parts: Vec<&str> = rest.splitn(2, ':').collect();
@@ -731,6 +731,12 @@ fn extract_repo_name(url: &str) -> Option<String> {
             let path_parts: Vec<&str> = path.split('/').collect();
             return path_parts.last().map(|s| s.to_string());
         }
+    }
+    // Handle SSH protocol and HTTP(S): extract last path segment
+    if url.starts_with("ssh://") || url.starts_with("http://") || url.starts_with("https://") {
+        let path = url.strip_suffix(".git").unwrap_or(url);
+        let path_parts: Vec<&str> = path.split('/').collect();
+        return path_parts.last().map(|s| s.to_string());
     }
     None
 }

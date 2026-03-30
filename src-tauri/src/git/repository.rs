@@ -9,7 +9,7 @@ use super::ssh_config::SshKeyConfig;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitRepository {
-    /// SSH URL: git@github.com:user/repo.git
+    /// Repository URL (SSH or HTTPS)
     pub url: String,
     /// Branch name (default: "main")
     pub branch: String,
@@ -46,38 +46,67 @@ impl GitRepository {
     }
 
     /// Parse repository info from URL
-    /// Returns (host, owner, repo) if valid SSH URL
+    /// Returns (host, owner, repo) if valid URL
     pub fn parse_url(&self) -> Option<(String, String, String)> {
-        // Parse SSH URL: git@github.com:user/repo.git
         let url = self.url.trim();
 
-        // Check if it's an SSH URL
-        if !url.starts_with("git@") {
-            return None;
+        // Handle SSH shorthand: git@host:owner/repo.git
+        if url.starts_with("git@") {
+            let rest = url.strip_prefix("git@")?;
+            let parts: Vec<&str> = rest.splitn(2, ':').collect();
+            if parts.len() != 2 {
+                return None;
+            }
+            let host = parts[0].to_string();
+            let path = parts[1].strip_suffix(".git").unwrap_or(parts[1]);
+            let path_parts: Vec<&str> = path.splitn(2, '/').collect();
+            if path_parts.len() != 2 {
+                return None;
+            }
+            return Some((host, path_parts[0].to_string(), path_parts[1].to_string()));
         }
 
-        // Remove "git@" prefix
-        let rest = url.strip_prefix("git@")?;
-
-        // Split by ":" to get host and path
-        let parts: Vec<&str> = rest.splitn(2, ':').collect();
-        if parts.len() != 2 {
-            return None;
+        // Handle SSH protocol: ssh://[user@]host[:port]/owner/repo.git
+        if url.starts_with("ssh://") {
+            let rest = url.strip_prefix("ssh://")?;
+            // Remove user@ prefix if present
+            let rest = if let Some(idx) = rest.find('@') {
+                &rest[idx + 1..]
+            } else {
+                rest
+            };
+            // Split host[:port] from path at first '/'
+            let slash_idx = rest.find('/')?;
+            let host_part = &rest[..slash_idx];
+            // Strip port from host
+            let host = if let Some(colon_idx) = host_part.find(':') {
+                &host_part[..colon_idx]
+            } else {
+                host_part
+            };
+            let path = rest[slash_idx + 1..].strip_suffix(".git").unwrap_or(&rest[slash_idx + 1..]);
+            let path_parts: Vec<&str> = path.splitn(2, '/').collect();
+            if path_parts.len() != 2 {
+                return None;
+            }
+            return Some((host.to_string(), path_parts[0].to_string(), path_parts[1].to_string()));
         }
 
-        let host = parts[0].to_string();
-        let path = parts[1];
-
-        // Remove .git suffix if present
-        let path = path.strip_suffix(".git").unwrap_or(path);
-
-        // Split path into owner and repo
-        let path_parts: Vec<&str> = path.splitn(2, '/').collect();
-        if path_parts.len() != 2 {
-            return None;
+        // Handle HTTPS: https://host/owner/repo.git
+        if url.starts_with("http://") || url.starts_with("https://") {
+            let scheme_end = if url.starts_with("https://") { 8 } else { 7 };
+            let rest = &url[scheme_end..];
+            let slash_idx = rest.find('/')?;
+            let host = &rest[..slash_idx];
+            let path = rest[slash_idx + 1..].strip_suffix(".git").unwrap_or(&rest[slash_idx + 1..]);
+            let path_parts: Vec<&str> = path.splitn(2, '/').collect();
+            if path_parts.len() != 2 {
+                return None;
+            }
+            return Some((host.to_string(), path_parts[0].to_string(), path_parts[1].to_string()));
         }
 
-        Some((host, path_parts[0].to_string(), path_parts[1].to_string()))
+        None
     }
 
     /// Get a display name for the repository
