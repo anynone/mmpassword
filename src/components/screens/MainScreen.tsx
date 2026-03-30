@@ -3,7 +3,6 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { useVaultStore } from "../../stores/vaultStore";
 import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout";
-import { EntryEditForm } from "../entry";
 import { GroupDialog } from "../group";
 import { useToast } from "../common/Toast";
 import type { Entry, Group } from "../../types";
@@ -13,8 +12,6 @@ interface MainScreenProps {
 }
 
 export function MainScreen({ onLock }: MainScreenProps) {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 
@@ -23,13 +20,13 @@ export function MainScreen({ onLock }: MainScreenProps) {
     entries,
     selectedEntryId,
     selectedGroupId,
-    selectEntry,
     selectGroup,
     getEntries,
     getGroups,
     deleteEntry,
     deleteGroup,
     lockVault,
+    editingState,
   } = useVaultStore();
 
   const { showToast } = useToast();
@@ -56,21 +53,10 @@ export function MainScreen({ onLock }: MainScreenProps) {
 
   // Handle settings
   const handleSettings = () => {
-    // TODO: Open settings modal
     showToast("info", "Settings coming soon");
   };
 
   // Entry actions
-  const handleCreateEntry = () => {
-    setEditingEntry(null);
-    setIsEditModalOpen(true);
-  };
-
-  const handleEditEntry = (entry: Entry) => {
-    setEditingEntry(entry);
-    setIsEditModalOpen(true);
-  };
-
   const handleDeleteEntry = async (entry: Entry) => {
     const confirmed = await confirm(`Delete "${entry.title}"?`, {
       title: "Delete Entry",
@@ -79,19 +65,6 @@ export function MainScreen({ onLock }: MainScreenProps) {
     if (confirmed) {
       await deleteEntry(entry.id);
       showToast("success", "Entry deleted");
-    }
-  };
-
-  const handleCopyField = async (entryId: string, fieldName: string) => {
-    const entry = entries.find((e) => e.id === entryId);
-    if (!entry) return;
-
-    const field = entry.fields.find(
-      (f) => f.name.toLowerCase() === fieldName.toLowerCase()
-    );
-    if (field?.value) {
-      await writeText(field.value);
-      showToast("success", `${fieldName} copied to clipboard`);
     }
   };
 
@@ -125,8 +98,10 @@ export function MainScreen({ onLock }: MainScreenProps) {
     }
   };
 
-  // Get selected entry
-  const selectedEntry = entries.find((e) => e.id === selectedEntryId);
+  // Get selected entry (null if virtual entry is selected)
+  const selectedEntry = editingState.mode === "creating"
+    ? null
+    : entries.find((e) => e.id === selectedEntryId);
 
   return (
     <div className="h-screen flex flex-col bg-surface">
@@ -158,17 +133,12 @@ export function MainScreen({ onLock }: MainScreenProps) {
         <EntryList
           entries={filteredEntries}
           selectedEntryId={selectedEntryId}
-          onSelectEntry={selectEntry}
-          onCreateEntry={handleCreateEntry}
-          onEditEntry={handleEditEntry}
           onDeleteEntry={handleDeleteEntry}
-          onCopyField={handleCopyField}
         />
 
         {/* Entry Detail */}
         <EntryDetail
           entry={selectedEntry || null}
-          onEdit={handleEditEntry}
           onCopyField={handleCopyFieldFromDetail}
         />
       </div>
@@ -176,17 +146,7 @@ export function MainScreen({ onLock }: MainScreenProps) {
       {/* Footer */}
       <StatusBar status="unlocked" version="0.1.0" />
 
-      {/* Modals */}
-      <EntryEditForm
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingEntry(null);
-        }}
-        entry={editingEntry}
-        defaultGroupId={selectedGroupId || undefined}
-      />
-
+      {/* Group Dialog (still uses modal) */}
       <GroupDialog
         isOpen={isGroupDialogOpen}
         onClose={() => {

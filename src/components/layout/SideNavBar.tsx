@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useVaultStore } from "../../stores/vaultStore";
 import { IconButton } from "../common/IconButton";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 import type { Group } from "../../types";
 
 interface SideNavBarProps {
@@ -18,12 +19,20 @@ export function SideNavBar({
   onEditGroup,
   onDeleteGroup,
 }: SideNavBarProps) {
-  const groups = useVaultStore((state) => state.groups);
+  const groups = useVaultStore((s) => s.groups);
+  const isEditingActive = useVaultStore((s) => s.isEditingActive);
+  const cancelEditing = useVaultStore((s) => s.cancelEditing);
+  const saveCurrentEditing = useVaultStore((s) => s.saveCurrentEditing);
+
   const [contextMenu, setContextMenu] = useState<{
     groupId: string;
     x: number;
     y: number;
   } | null>(null);
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    pendingAction: () => void;
+  }>({ isOpen: false, pendingAction: () => {} });
 
   const handleContextMenu = (e: React.MouseEvent, groupId: string) => {
     e.preventDefault();
@@ -52,6 +61,39 @@ export function SideNavBar({
     return iconName || "folder";
   };
 
+  const handleSelectGroup = (groupId: string | null) => {
+    if (isEditingActive()) {
+      setConfirmState({ isOpen: true, pendingAction: () => performGroupSelect(groupId) });
+    } else {
+      performGroupSelect(groupId);
+    }
+  };
+
+  const performGroupSelect = (groupId: string | null) => {
+    cancelEditing();
+    onSelectGroup(groupId);
+  };
+
+  const handleConfirmDiscard = () => {
+    const action = confirmState.pendingAction;
+    setConfirmState({ isOpen: false, pendingAction: () => {} });
+    cancelEditing();
+    action();
+  };
+
+  const handleConfirmSave = async () => {
+    const action = confirmState.pendingAction;
+    setConfirmState({ isOpen: false, pendingAction: () => {} });
+    const saved = await saveCurrentEditing();
+    if (saved) {
+      action();
+    }
+  };
+
+  const handleConfirmCancel = () => {
+    setConfirmState({ isOpen: false, pendingAction: () => {} });
+  };
+
   return (
     <aside className="w-56 bg-surface-container flex flex-col border-r border-outline-variant/20">
       {/* Header */}
@@ -71,7 +113,7 @@ export function SideNavBar({
       <nav className="flex-1 overflow-y-auto custom-scrollbar py-2">
         {/* All Items */}
         <button
-          onClick={() => onSelectGroup(null)}
+          onClick={() => handleSelectGroup(null)}
           className={`
             w-full flex items-center gap-3 px-4 py-2 text-left
             transition-all duration-150
@@ -90,7 +132,7 @@ export function SideNavBar({
         {groups.map((group) => (
           <button
             key={group.id}
-            onClick={() => onSelectGroup(group.id)}
+            onClick={() => handleSelectGroup(group.id)}
             onContextMenu={(e) => handleContextMenu(e, group.id)}
             className={`
               w-full flex items-center gap-3 px-4 py-2 text-left
@@ -138,6 +180,16 @@ export function SideNavBar({
           </div>
         </>
       )}
+
+      {/* Unsaved Changes Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Do you want to save them before leaving?"
+        onDiscard={handleConfirmDiscard}
+        onSave={handleConfirmSave}
+        onCancel={handleConfirmCancel}
+      />
     </aside>
   );
 }
