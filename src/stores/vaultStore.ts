@@ -1,7 +1,63 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import type { Vault, VaultMeta, Group, Entry, CreateEntryRequest, UpdateEntryRequest } from "../types";
+import type { Vault, VaultMeta, Group, Entry, Field, FieldType, EntryType, CreateEntryRequest, UpdateEntryRequest } from "../types";
 import type { GitSyncResult, DetectedSshKey, SshKeyValidation, GitAccessValidation } from "../types/git";
+
+// --- Editing state types ---
+
+export interface FieldInput {
+  id: string;
+  name: string;
+  value: string;
+  fieldType: FieldType;
+}
+
+export interface EntryFormData {
+  title: string;
+  entryType: EntryType;
+  groupId: string;
+  favorite: boolean;
+  fields: FieldInput[];
+}
+
+export type EditingState =
+  | { mode: "viewing" }
+  | { mode: "editing"; entryId: string; originalData: EntryFormData; currentData: EntryFormData }
+  | { mode: "creating"; originalData: EntryFormData; currentData: EntryFormData };
+
+export interface VirtualEntry {
+  id: string;
+  isVirtual: true;
+}
+
+export const VIRTUAL_ENTRY_ID = "__virtual_entry__";
+
+const defaultFieldInputs = (): FieldInput[] => [
+  { id: crypto.randomUUID(), name: "Username", value: "", fieldType: "username" },
+  { id: crypto.randomUUID(), name: "Password", value: "", fieldType: "password" },
+  { id: crypto.randomUUID(), name: "Website", value: "", fieldType: "url" },
+];
+
+const emptyFormData = (): EntryFormData => ({
+  title: "",
+  entryType: "websiteLogin",
+  groupId: "",
+  favorite: false,
+  fields: defaultFieldInputs(),
+});
+
+const entryToFormData = (entry: Entry): EntryFormData => ({
+  title: entry.title,
+  entryType: entry.entryType || "websiteLogin",
+  groupId: entry.groupId || "",
+  favorite: entry.favorite || false,
+  fields: entry.fields.map((f) => ({
+    id: crypto.randomUUID(),
+    name: f.name,
+    value: f.value,
+    fieldType: f.fieldType || ("text" as FieldType),
+  })),
+});
 
 interface VaultState {
   // State
@@ -48,6 +104,17 @@ interface VaultState {
   selectGroup: (id: string | null) => void;
   setSearchQuery: (query: string) => void;
   clearError: () => void;
+
+  // Editing state
+  editingState: EditingState;
+  virtualEntry: VirtualEntry | null;
+  startEditing: (entry: Entry) => void;
+  startCreating: (groupId?: string) => void;
+  cancelEditing: () => void;
+  updateFormData: (data: Partial<EntryFormData>) => void;
+  hasUnsavedChanges: () => boolean;
+  isEditingActive: () => boolean;
+  saveCurrentEditing: () => Promise<boolean>;
 }
 
 export const useVaultStore = create<VaultState>((set) => ({
@@ -297,4 +364,109 @@ export const useVaultStore = create<VaultState>((set) => ({
   selectGroup: (id) => set({ selectedGroupId: id }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   clearError: () => set({ error: null }),
+
+  // Editing state
+  editingState: { mode: "viewing" },
+  virtualEntry: null,
+
+  startEditing: (entry) => {
+    const formData = entryToFormData(entry);
+    const originalData: EntryFormData = JSON.parse(JSON.stringify(formData));
+    set({
+      editingState: { mode: "editing", entryId: entry.id, originalData, currentData: formData },
+      virtualEntry: null,
+    });
+  },
+
+  startCreating: (groupId) => {
+    const data = emptyFormData();
+    if (groupId) data.groupId = groupId;
+    const originalData: EntryFormData = JSON.parse(JSON.stringify(data));
+    set({
+      editingState: { mode: "creating", originalData, currentData: data },
+      virtualEntry: { id: VIRTUAL_ENTRY_ID, isVirtual: true },
+      selectedEntryId: VIRTUAL_ENTRY_ID,
+    });
+  },
+
+  cancelEditing: () => {
+    set((state) => ({
+      editingState: { mode: "viewing" },
+      virtualEntry: null,
+      selectedEntryId: state.editingState.mode === "creating" ? null : state.selectedEntryId,
+    }));
+  },
+
+  updateFormData: (data) => {
+    set((state) => {
+      if (state.editingState.mode === "viewing") return state;
+      const current = state.editingState.currentData;
+      return {
+        editingState: {
+          ...state.editingState,
+          currentData: { ...current, ...data },
+        },
+      };
+    });
+  },
+
+  hasUnsavedChanges: (): boolean => {
+    const state = useVaultStore.getState() as VaultState;
+    if (state.editingState.mode === "viewing") return false;
+    const { originalData, currentData } = state.editingState;
+    return JSON.stringify(currentData) !== JSON.stringify(originalData);
+  },
+
+  isEditingActive: (): boolean => {
+    const state = useVaultStore.getState() as VaultState;
+    return state.editingState.mode !== "viewing";
+  },
+
+  saveCurrentEditing: async (): Promise<boolean> => {
+    const state = useVaultStore.getState() as VaultState;
+    if (state.editingState.mode === "viewing") return true;
+
+    const formData = state.editingState.currentData;
+
+    if (!formData.title.trim()) {
+      // Title is required, can't save
+      return false;
+    }
+
+    const entryFields: Field[] = formData.fields
+      .filter((f) => f.name.trim() && f.value.trim())
+      .map((f) => ({
+        name: f.name.trim(),
+        value: f.value,
+        fieldType: f.fieldType,
+        protected: f.fieldType === "password",
+      }));
+
+    try {
+      if (state.editingState.mode === "editing") {
+        await state.updateEntry(state.editingState.entryId, {
+          title: formData.title.trim(),
+          groupId: formData.groupId || undefined,
+          fields: entryFields,
+          tags: [],
+          favorite: formData.favorite,
+        });
+      } else if (state.editingState.mode === "creating") {
+        const newEntry = await state.createEntry({
+          title: formData.title.trim(),
+          entryType: formData.entryType,
+          groupId: formData.groupId || undefined,
+          fields: entryFields,
+          tags: [],
+          favorite: formData.favorite,
+        });
+        useVaultStore.getState().selectEntry(newEntry.id);
+      }
+
+      state.cancelEditing();
+      return true;
+    } catch {
+      return false;
+    }
+  },
 }));

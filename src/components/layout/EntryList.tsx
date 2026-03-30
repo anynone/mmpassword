@@ -1,36 +1,76 @@
 import { useState } from "react";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Entry } from "../../types";
+import { useVaultStore } from "../../stores/vaultStore";
 import { IconButton } from "../common/IconButton";
+import { ConfirmDialog } from "../common/ConfirmDialog";
+import { useToast } from "../common/Toast";
 
 interface EntryListProps {
   entries: Entry[];
   selectedEntryId: string | null;
-  onSelectEntry: (entryId: string) => void;
-  onCreateEntry: () => void;
-  onEditEntry: (entry: Entry) => void;
   onDeleteEntry: (entry: Entry) => void;
-  onCopyField: (entryId: string, fieldName: string) => void;
 }
 
 export function EntryList({
   entries,
   selectedEntryId,
-  onSelectEntry,
-  onCreateEntry,
-  onEditEntry,
   onDeleteEntry,
-  onCopyField,
 }: EntryListProps) {
+  const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry } = useVaultStore();
+  const { showToast } = useToast();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [contextMenu, setContextMenu] = useState<{
     entryId: string;
     x: number;
     y: number;
   } | null>(null);
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    pendingAction: () => void;
+  }>({ isOpen: false, pendingAction: () => {} });
 
   const filteredEntries = entries.filter((entry) =>
     entry.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Guard navigation - check for editing state before navigating
+  const guardAndNavigate = (action: () => void) => {
+    if (isEditingActive()) {
+      setConfirmState({ isOpen: true, pendingAction: action });
+    } else {
+      action();
+    }
+  };
+
+  const handleConfirmDiscard = () => {
+    const action = confirmState.pendingAction;
+    setConfirmState({ isOpen: false, pendingAction: () => {} });
+    cancelEditing();
+    action();
+  };
+
+  const handleConfirmSave = async () => {
+    const action = confirmState.pendingAction;
+    setConfirmState({ isOpen: false, pendingAction: () => {} });
+    const saved = await saveCurrentEditing();
+    if (saved) {
+      action();
+    }
+  };
+
+  const handleConfirmCancel = () => {
+    setConfirmState({ isOpen: false, pendingAction: () => {} });
+  };
+
+  const handleSelectEntry = (entryId: string) => {
+    guardAndNavigate(() => selectEntry(entryId));
+  };
+
+  const handleCreateEntry = () => {
+    guardAndNavigate(() => startCreating(useVaultStore.getState().selectedGroupId || undefined));
+  };
 
   const handleContextMenu = (e: React.MouseEvent, entryId: string) => {
     e.preventDefault();
@@ -42,7 +82,9 @@ export function EntryList({
   const handleEdit = () => {
     if (contextMenu) {
       const entry = entries.find((e) => e.id === contextMenu.entryId);
-      if (entry) onEditEntry(entry);
+      if (entry) {
+        guardAndNavigate(() => startEditing(entry));
+      }
     }
     closeContextMenu();
   };
@@ -55,22 +97,31 @@ export function EntryList({
     closeContextMenu();
   };
 
-  const handleCopyUsername = () => {
+  const handleCopyUsername = async () => {
     if (contextMenu) {
-      onCopyField(contextMenu.entryId, "username");
+      const entry = entries.find((e) => e.id === contextMenu.entryId);
+      const field = entry?.fields.find((f) => f.name.toLowerCase() === "username");
+      if (field?.value) {
+        await writeText(field.value);
+        showToast("success", "Username copied to clipboard");
+      }
     }
     closeContextMenu();
   };
 
-  const handleCopyPassword = () => {
+  const handleCopyPassword = async () => {
     if (contextMenu) {
-      onCopyField(contextMenu.entryId, "password");
+      const entry = entries.find((e) => e.id === contextMenu.entryId);
+      const field = entry?.fields.find((f) => f.name.toLowerCase() === "password");
+      if (field?.value) {
+        await writeText(field.value);
+        showToast("success", "Password copied to clipboard");
+      }
     }
     closeContextMenu();
   };
 
   const getEntryIcon = (entry: Entry) => {
-    // Try to determine icon based on URL or title
     const url = entry.fields.find((f) => f.name === "url")?.value?.toLowerCase() || "";
     const title = entry.title.toLowerCase();
 
@@ -94,7 +145,7 @@ export function EntryList({
           icon="add"
           size="sm"
           tooltip="New Entry"
-          onClick={onCreateEntry}
+          onClick={handleCreateEntry}
         />
       </div>
 
@@ -116,7 +167,26 @@ export function EntryList({
 
       {/* Entry List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {filteredEntries.length === 0 ? (
+        {/* Virtual entry placeholder (for creating mode) */}
+        {virtualEntry && (
+          <button
+            className={`
+              w-full flex items-center gap-3 px-4 py-3 text-left
+              transition-all duration-150 border-b border-outline-variant/10
+              bg-primary-container/50 border-l-2 border-l-primary
+            `}
+          >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/20">
+              <span className="material-symbols-outlined text-lg text-primary">add</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium italic text-primary">New Entry</p>
+              <p className="text-xs text-on-surface-variant italic">Editing...</p>
+            </div>
+          </button>
+        )}
+
+        {filteredEntries.length === 0 && !virtualEntry ? (
           <div className="flex flex-col items-center justify-center py-8 text-center px-4">
             <span className="material-symbols-outlined text-3xl text-on-surface-variant mb-2">
               {searchQuery ? "search_off" : "key"}
@@ -129,7 +199,7 @@ export function EntryList({
           filteredEntries.map((entry) => (
             <button
               key={entry.id}
-              onClick={() => onSelectEntry(entry.id)}
+              onClick={() => handleSelectEntry(entry.id)}
               onContextMenu={(e) => handleContextMenu(e, entry.id)}
               className={`
                 w-full flex items-center gap-3 px-4 py-3 text-left
@@ -205,6 +275,16 @@ export function EntryList({
           </div>
         </>
       )}
+
+      {/* Unsaved Changes Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Do you want to save them before leaving?"
+        onDiscard={handleConfirmDiscard}
+        onSave={handleConfirmSave}
+        onCancel={handleConfirmCancel}
+      />
     </div>
   );
 }
