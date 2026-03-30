@@ -21,8 +21,10 @@ export function RepoConfig({ sshKeyPath, onConfigured }: RepoConfigProps) {
       return;
     }
 
-    if (!repoUrl.startsWith("git@")) {
-      showToast("error", "URL must be in SSH format: git@github.com:user/repo.git");
+    const isSsh = repoUrl.startsWith("git@") || repoUrl.startsWith("ssh://");
+    const isHttps = repoUrl.startsWith("https://") || repoUrl.startsWith("http://");
+    if (!isSsh && !isHttps) {
+      showToast("error", "URL must be in SSH (git@host:user/repo.git) or HTTPS (https://host/user/repo.git) format");
       return;
     }
 
@@ -64,7 +66,7 @@ export function RepoConfig({ sshKeyPath, onConfigured }: RepoConfigProps) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="text-sm font-medium text-on-surface">Repository URL (SSH):</label>
+        <label className="text-sm font-medium text-on-surface">Repository URL:</label>
         <input
           type="text"
           value={repoUrl}
@@ -72,10 +74,10 @@ export function RepoConfig({ sshKeyPath, onConfigured }: RepoConfigProps) {
             setRepoUrl(e.target.value);
             setValidation(null);
           }}
-          placeholder="git@github.com:username/repository.git"
+          placeholder="git@host:user/repo.git or ssh://git@host:port/user/repo.git"
           className="w-full px-3 py-2 bg-surface-container-lowest rounded-lg text-sm border border-outline-variant focus:border-primary focus:outline-none font-mono"
         />
-        <p className="text-xs text-on-surface-variant">Use SSH URL format from your Git provider</p>
+        <p className="text-xs text-on-surface-variant">SSH or HTTPS URL from your Git provider (GitHub, GitLab, Gitea, etc.)</p>
       </div>
 
       <div className="space-y-2">

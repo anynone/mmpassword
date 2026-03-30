@@ -83,8 +83,37 @@ Salt: Argon2id salt (16 bytes)
 Encrypted: Nonce (12 bytes) + ChaCha20-Poly1305 ciphertext
 ```
 
+## Important Patterns
+
+### Git Vault Save Pattern (CRITICAL)
+When modifying entry/group commands, extract Git sync info BEFORE any await to avoid Send trait issues with parking_lot locks:
+```rust
+// Extract Git info BEFORE any await
+if let Some((repository, clone_dir)) = get_git_sync_info(state) {
+    let engine = GitSyncEngine::new(repository, clone_dir);
+    engine.save_vault(vault, key, salt, Some("commit message")).await?;
+} else if let Some(path) = get_local_vault_path(state) {
+    save_vault_file_with_key(&path, vault, key, salt)?;
+}
+```
+
+### Git Repository Cloning
+The `clone_repository` function in `git/operations.rs` handles:
+1. Existing branches: clone directly with `--branch` flag
+2. Non-existent branches on repos with commits: clone default, create branch, push
+3. Empty repositories: init locally, create initial commit, add remote, push
+
+### Modal with Scrollable Content
+Modal component supports scrollable body with fixed footer:
+```tsx
+<Modal footer={<Buttons />}>
+  {/* Content scrolls if it exceeds max-h-[85vh] */}
+</Modal>
+```
+
 ## Notes
 
 - Frontend has no test infrastructure (no Jest/Vitest)
 - UI follows Material Design 3 color system (see tailwind.config.js)
 - Product and design documentation is in Chinese
+- Git repos are cloned to `~/.mmpassword/repos/<hash>/` where hash is SHA-256 of repo URL
