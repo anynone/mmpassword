@@ -1,1 +1,1 @@
-export { EntryEditForm } from "./EntryEditForm";
+export { EntryFormFields } from "./EntryFormFields";
