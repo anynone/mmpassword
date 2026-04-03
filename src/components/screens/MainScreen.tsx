@@ -4,7 +4,9 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import { useVaultStore } from "../../stores/vaultStore";
 import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout";
 import { GroupDialog } from "../group";
+import { SettingsModal } from "../settings";
 import { useToast } from "../common/Toast";
+import { useTranslation } from "../../i18n";
 import type { Entry, Group } from "../../types";
 
 interface MainScreenProps {
@@ -13,11 +15,11 @@ interface MainScreenProps {
 
 export function MainScreen({ onLock }: MainScreenProps) {
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 
   const {
     vault,
-    entries,
     selectedEntryId,
     selectedGroupId,
     selectGroup,
@@ -27,9 +29,14 @@ export function MainScreen({ onLock }: MainScreenProps) {
     deleteGroup,
     lockVault,
     editingState,
+    subscriptionGroups,
+    subscriptionSource,
+    mergedEntries,
+    isSubscriptionEntry,
   } = useVaultStore();
 
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   // Load data
   useEffect(() => {
@@ -40,37 +47,45 @@ export function MainScreen({ onLock }: MainScreenProps) {
     await Promise.all([getEntries(), getGroups()]);
   };
 
+  // Use merged entries (local + subscription)
+  const allMergedEntries = mergedEntries();
+
   // Filter entries by selected group
   const filteredEntries = selectedGroupId
-    ? entries.filter((e) => e.groupId === selectedGroupId)
-    : entries;
+    ? allMergedEntries.filter((e) => e.groupId === selectedGroupId)
+    : allMergedEntries;
 
   // Handle lock
   const handleLock = async () => {
-    await lockVault();
+    if (vault && useVaultStore.getState().isUnlocked) {
+      await lockVault();
+    } else {
+      // Subscription-only mode: just clear subscription data
+      useVaultStore.getState().clearSubscription();
+    }
     onLock();
   };
 
   // Handle settings
   const handleSettings = () => {
-    showToast("info", "Settings coming soon");
+    setIsSettingsOpen(true);
   };
 
   // Entry actions
   const handleDeleteEntry = async (entry: Entry) => {
-    const confirmed = await confirm(`Delete "${entry.title}"?`, {
-      title: "Delete Entry",
+    const confirmed = await confirm(t("main.deleteEntryConfirm", { title: entry.title }), {
+      title: t("main.deleteEntry"),
       kind: "warning",
     });
     if (confirmed) {
       await deleteEntry(entry.id);
-      showToast("success", "Entry deleted");
+      showToast("success", t("main.entryDeleted"));
     }
   };
 
   const handleCopyFieldFromDetail = async (fieldName: string, value: string) => {
     await writeText(value);
-    showToast("success", `${fieldName} copied to clipboard`);
+    showToast("success", t("entryDetail.copiedToClipboard", { field: fieldName }));
   };
 
   // Group actions
@@ -86,22 +101,22 @@ export function MainScreen({ onLock }: MainScreenProps) {
 
   const handleDeleteGroup = async (group: Group) => {
     const confirmed = await confirm(
-      `Delete group "${group.name}"? Entries will be moved to root.`,
+      t("main.deleteGroupConfirm", { name: group.name }),
       {
-        title: "Delete Group",
+        title: t("main.deleteGroup"),
         kind: "warning",
       }
     );
     if (confirmed) {
       await deleteGroup(group.id);
-      showToast("success", "Group deleted");
+      showToast("success", t("main.groupDeleted"));
     }
   };
 
   // Get selected entry (null if virtual entry is selected)
   const selectedEntry = editingState.mode === "creating"
     ? null
-    : entries.find((e) => e.id === selectedEntryId);
+    : allMergedEntries.find((e) => e.id === selectedEntryId);
 
   return (
     <div className="h-screen flex flex-col bg-surface">
@@ -127,6 +142,8 @@ export function MainScreen({ onLock }: MainScreenProps) {
           onCreateGroup={handleCreateGroup}
           onEditGroup={handleEditGroup}
           onDeleteGroup={handleDeleteGroup}
+          subscriptionGroups={subscriptionGroups}
+          subscriptionSource={subscriptionSource ?? null}
         />
 
         {/* Entry List */}
@@ -134,12 +151,14 @@ export function MainScreen({ onLock }: MainScreenProps) {
           entries={filteredEntries}
           selectedEntryId={selectedEntryId}
           onDeleteEntry={handleDeleteEntry}
+          isSubscriptionEntry={isSubscriptionEntry}
         />
 
         {/* Entry Detail */}
         <EntryDetail
           entry={selectedEntry || null}
           onCopyField={handleCopyFieldFromDetail}
+          isSubscription={selectedEntry ? isSubscriptionEntry(selectedEntry.id) : false}
         />
       </div>
 
@@ -155,6 +174,9 @@ export function MainScreen({ onLock }: MainScreenProps) {
         }}
         group={editingGroup}
       />
+
+      {/* Settings Modal */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }

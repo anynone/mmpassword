@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useVaultStore } from "../../stores/vaultStore";
 import { IconButton } from "../common/IconButton";
 import { ConfirmDialog } from "../common/ConfirmDialog";
+import { useTranslation } from "../../i18n";
 import type { Group } from "../../types";
 
 interface SideNavBarProps {
@@ -10,6 +11,8 @@ interface SideNavBarProps {
   onCreateGroup: () => void;
   onEditGroup: (group: Group) => void;
   onDeleteGroup: (group: Group) => void;
+  subscriptionGroups?: Group[];
+  subscriptionSource?: string | null;
 }
 
 export function SideNavBar({
@@ -18,11 +21,14 @@ export function SideNavBar({
   onCreateGroup,
   onEditGroup,
   onDeleteGroup,
+  subscriptionGroups = [],
+  subscriptionSource: _subscriptionSource,
 }: SideNavBarProps) {
   const groups = useVaultStore((s) => s.groups);
   const isEditingActive = useVaultStore((s) => s.isEditingActive);
   const cancelEditing = useVaultStore((s) => s.cancelEditing);
   const saveCurrentEditing = useVaultStore((s) => s.saveCurrentEditing);
+  const { t } = useTranslation();
 
   const [contextMenu, setContextMenu] = useState<{
     groupId: string;
@@ -99,12 +105,12 @@ export function SideNavBar({
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-outline-variant/20">
         <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">
-          Groups
+          {t("sideNav.groups")}
         </span>
         <IconButton
           icon="add"
           size="sm"
-          tooltip="New Group"
+          tooltip={t("sideNav.newGroup")}
           onClick={onCreateGroup}
         />
       </div>
@@ -125,7 +131,7 @@ export function SideNavBar({
           `}
         >
           <span className="material-symbols-outlined text-xl">apps</span>
-          <span className="text-sm font-medium">All Items</span>
+          <span className="text-sm font-medium">{t("sideNav.allItems")}</span>
         </button>
 
         {/* Groups */}
@@ -150,6 +156,39 @@ export function SideNavBar({
             <span className="text-sm font-medium truncate">{group.name}</span>
           </button>
         ))}
+
+        {/* Subscription Groups */}
+        {subscriptionGroups.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 px-4 py-2 mt-3 mb-1">
+              <span className="material-symbols-outlined text-xs text-on-surface-variant">rss_feed</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
+                {t("subscription.subscriptionGroup")}
+              </span>
+            </div>
+            {subscriptionGroups.map((group) => (
+              <button
+                key={`sub-${group.id}`}
+                onClick={() => handleSelectGroup(group.id)}
+                className={`
+                  w-full flex items-center gap-3 px-4 py-2 text-left
+                  transition-all duration-150
+                  ${
+                    selectedGroupId === group.id
+                      ? "bg-tertiary-container text-on-tertiary-container"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  }
+                `}
+              >
+                <span className="material-symbols-outlined text-xl text-on-tertiary-container">
+                  {getGroupIcon(group.icon)}
+                </span>
+                <span className="text-sm font-medium truncate">{group.name}</span>
+                <span className="material-symbols-outlined text-xs text-on-surface-variant ml-auto">lock</span>
+              </button>
+            ))}
+          </>
+        )}
       </nav>
 
       {/* Context Menu */}
@@ -168,14 +207,14 @@ export function SideNavBar({
               className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-on-surface hover:bg-surface-container-high"
             >
               <span className="material-symbols-outlined text-lg">edit</span>
-              Edit
+              {t("sideNav.edit")}
             </button>
             <button
               onClick={handleDelete}
               className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-error hover:bg-error-container/20"
             >
               <span className="material-symbols-outlined text-lg">delete</span>
-              Delete
+              {t("sideNav.delete")}
             </button>
           </div>
         </>
@@ -184,8 +223,8 @@ export function SideNavBar({
       {/* Unsaved Changes Confirm Dialog */}
       <ConfirmDialog
         isOpen={confirmState.isOpen}
-        title="Unsaved Changes"
-        message="You have unsaved changes. Do you want to save them before leaving?"
+        title={t("confirm.unsavedChanges")}
+        message={t("confirm.unsavedChangesMessage")}
         onDiscard={handleConfirmDiscard}
         onSave={handleConfirmSave}
         onCancel={handleConfirmCancel}

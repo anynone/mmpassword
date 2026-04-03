@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useVaultStore } from "../../stores/vaultStore";
 import { IconButton } from "../common/IconButton";
 import { ConfirmDialog } from "../common/ConfirmDialog";
+import { useTranslation } from "../../i18n";
 
 interface TopNavBarProps {
   onLock: () => void;
@@ -11,9 +12,12 @@ interface TopNavBarProps {
 export function TopNavBar({ onLock, onSettings }: TopNavBarProps) {
   const vault = useVaultStore((state) => state.vault);
   const isUnlocked = useVaultStore((state) => state.isUnlocked);
+  const subscriptionSource = useVaultStore((state) => state.subscriptionSource);
   const isEditingActive = useVaultStore((state) => state.isEditingActive);
   const cancelEditing = useVaultStore((state) => state.cancelEditing);
   const saveCurrentEditing = useVaultStore((state) => state.saveCurrentEditing);
+
+  const { t } = useTranslation();
 
   const [confirmState, setConfirmState] = useState<{
     isOpen: boolean;
@@ -62,24 +66,24 @@ export function TopNavBar({ onLock, onSettings }: TopNavBarProps) {
         )}
       </div>
       <div className="flex items-center gap-2">
-        {isUnlocked && (
+        {(isUnlocked || subscriptionSource) && (
           <IconButton
             icon="lock"
-            tooltip="Lock Vault"
+            tooltip={t("topNav.lockVault")}
             onClick={() => guardAndNavigate(onLock)}
           />
         )}
         <IconButton
           icon="settings"
-          tooltip="Settings"
+          tooltip={t("topNav.settings")}
           onClick={() => guardAndNavigate(onSettings)}
         />
       </div>
 
       <ConfirmDialog
         isOpen={confirmState.isOpen}
-        title="Unsaved Changes"
-        message="You have unsaved changes. Do you want to save them before leaving?"
+        title={t("confirm.unsavedChanges")}
+        message={t("confirm.unsavedChangesMessage")}
         onDiscard={handleConfirmDiscard}
         onSave={handleConfirmSave}
         onCancel={handleConfirmCancel}

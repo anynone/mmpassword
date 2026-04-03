@@ -1,3 +1,5 @@
+import { useTranslation } from "../../i18n";
+
 interface StatusBarProps {
   status?: "secure" | "unlocked" | "locked";
   version?: string;
@@ -7,10 +9,12 @@ export function StatusBar({
   status = "secure",
   version = "0.1.0",
 }: StatusBarProps) {
+  const { t } = useTranslation();
+
   const statusConfig = {
-    secure: { text: "Status: Secure", color: "text-emerald-600", icon: "verified_user" },
-    unlocked: { text: "Status: Unlocked", color: "text-amber-600", icon: "lock_open" },
-    locked: { text: "Status: Locked", color: "text-on-surface-variant", icon: "lock" },
+    secure: { text: t("statusBar.secure"), color: "text-emerald-600 dark:text-emerald-400", icon: "verified_user" },
+    unlocked: { text: t("statusBar.unlocked"), color: "text-amber-600 dark:text-amber-400", icon: "lock_open" },
+    locked: { text: t("statusBar.locked"), color: "text-on-surface-variant", icon: "lock" },
   };
 
   const { text, color, icon } = statusConfig[status];

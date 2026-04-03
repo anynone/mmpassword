@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import type { Vault, VaultMeta, Group, Entry, Field, FieldType, EntryType, CreateEntryRequest, UpdateEntryRequest } from "../types";
+import type { Vault, VaultMeta, Group, Entry, Field, FieldType, EntryType, CreateEntryRequest, UpdateEntryRequest, SubscriptionMeta } from "../types";
 import type { GitSyncResult, DetectedSshKey, SshKeyValidation, GitAccessValidation } from "../types/git";
 
 // --- Editing state types ---
@@ -99,6 +99,21 @@ interface VaultState {
   syncGitVault: (password: string) => Promise<GitSyncResult>;
   saveGitVault: (commitMessage?: string) => Promise<string>;
 
+  // Subscription state
+  subscriptionVault: Vault | null;
+  subscriptionEntries: Entry[];
+  subscriptionGroups: Group[];
+  subscriptionSource: string | null;
+
+  // Subscription operations
+  fetchSubscription: (url: string) => Promise<Vault>;
+  getSubscriptionHistory: () => Promise<SubscriptionMeta[]>;
+  removeSubscriptionHistory: (url: string) => Promise<void>;
+  clearSubscription: () => void;
+  isSubscriptionEntry: (entryId: string) => boolean;
+  mergedEntries: () => Entry[];
+  mergedGroups: () => Group[];
+
   // UI state
   selectEntry: (id: string | null) => void;
   selectGroup: (id: string | null) => void;
@@ -170,6 +185,12 @@ export const useVaultStore = create<VaultState>((set) => ({
   lockVault: async () => {
     try {
       await invoke("lock_vault");
+      // Also clear subscription data
+      try {
+        await invoke("clear_subscription");
+      } catch {
+        // Ignore subscription clear error
+      }
       set({
         vault: null,
         entries: [],
@@ -178,6 +199,10 @@ export const useVaultStore = create<VaultState>((set) => ({
         isUnlocked: false,
         selectedEntryId: null,
         selectedGroupId: null,
+        subscriptionVault: null,
+        subscriptionEntries: [],
+        subscriptionGroups: [],
+        subscriptionSource: null,
       });
     } catch (error) {
       set({ error: String(error) });
@@ -357,6 +382,76 @@ export const useVaultStore = create<VaultState>((set) => ({
       set({ error: String(error), isLoading: false });
       throw error;
     }
+  },
+
+  // Subscription state
+  subscriptionVault: null,
+  subscriptionEntries: [],
+  subscriptionGroups: [],
+  subscriptionSource: null,
+
+  // Subscription operations
+  fetchSubscription: async (url) => {
+    set({ isLoading: true, error: null });
+    try {
+      const vault = await invoke<Vault>("fetch_subscription_vault", { url });
+      set({
+        subscriptionVault: vault,
+        subscriptionEntries: vault.entries.map((e: Entry) => ({ ...e, _source: "subscription" as const })),
+        subscriptionGroups: vault.groups,
+        subscriptionSource: url,
+        isLoading: false,
+      });
+      return vault;
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+      throw error;
+    }
+  },
+
+  getSubscriptionHistory: async () => {
+    try {
+      return await invoke<SubscriptionMeta[]>("get_subscription_history");
+    } catch (error) {
+      set({ error: String(error) });
+      return [];
+    }
+  },
+
+  removeSubscriptionHistory: async (url) => {
+    try {
+      await invoke("remove_subscription_history", { url });
+    } catch (error) {
+      set({ error: String(error) });
+    }
+  },
+
+  clearSubscription: () => {
+    set({
+      subscriptionVault: null,
+      subscriptionEntries: [],
+      subscriptionGroups: [],
+      subscriptionSource: null,
+    });
+  },
+
+  isSubscriptionEntry: (entryId) => {
+    const state = useVaultStore.getState() as VaultState;
+    return state.subscriptionEntries.some((e) => e.id === entryId);
+  },
+
+  mergedEntries: () => {
+    const state = useVaultStore.getState() as VaultState;
+    const subEntries = state.subscriptionEntries.map((e) => ({
+      ...e,
+      _source: "subscription" as const,
+    }));
+    return [...state.entries, ...subEntries];
+  },
+
+  mergedGroups: () => {
+    const state = useVaultStore.getState() as VaultState;
+    return [...state.groups, ...state.subscriptionGroups];
   },
 
   // UI state

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useVaultStore } from "../../stores/vaultStore";
+import { useTranslation } from "../../i18n";
 
 interface UnlockScreenProps {
   vaultPath: string;
@@ -14,6 +15,7 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { unlockVault } = useVaultStore();
+  const { t } = useTranslation();
 
   const vaultName = vaultPath.split("/").pop()?.replace(".mmp", "") || "Vault";
 
@@ -26,7 +28,7 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
       await unlockVault(vaultPath, password);
       onUnlock();
     } catch (err) {
-      setError("Invalid master password. Please try again.");
+      setError(t("unlock.invalidPassword"));
       setPassword("");
     } finally {
       setIsSubmitting(false);
@@ -43,11 +45,6 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
             mmpassword
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="p-2 rounded-full hover:bg-surface-container-high transition-colors">
-            <span className="material-symbols-outlined text-on-surface-variant">settings</span>
-          </button>
-        </div>
       </header>
 
       {/* Main Content */}
@@ -60,7 +57,7 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
               className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors"
             >
               <span className="material-symbols-outlined text-xl">arrow_back</span>
-              <span className="text-sm font-medium">Back to Welcome</span>
+              <span className="text-sm font-medium">{t("unlock.backToWelcome")}</span>
             </button>
           </div>
 
@@ -81,7 +78,7 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
                 {vaultName}
               </h1>
               <p className="text-on-surface-variant text-sm mb-10">
-                Enter your master password to unlock
+                {t("unlock.enterPassword")}
               </p>
 
               {/* Form */}
@@ -91,7 +88,7 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
                     htmlFor="password"
                     className="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2 px-1"
                   >
-                    Master Password
+                    {t("unlock.masterPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -106,13 +103,13 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5 px-2 py-1 rounded bg-white/50"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-lowest/50"
                     >
                       <span className="material-symbols-outlined text-xl">
                         {showPassword ? "visibility_off" : "visibility"}
                       </span>
                       <span className="text-xs font-medium">
-                        {showPassword ? "Hide" : "Show"}
+                        {showPassword ? t("unlock.hide") : t("unlock.show")}
                       </span>
                     </button>
                   </div>
@@ -128,7 +125,7 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
                   className="w-full h-14 bg-primary-gradient text-on-primary font-headline font-bold rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="material-symbols-outlined text-xl">lock_open</span>
-                  {isSubmitting ? "Unlocking..." : "Unlock Vault"}
+                  {isSubmitting ? t("unlock.unlocking") : t("unlock.unlockVault")}
                 </button>
               </form>
 
@@ -143,7 +140,7 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
                   ))}
                 </div>
                 <span className="text-xs text-on-surface-variant font-medium">
-                  Remaining attempts: <span className="text-on-surface font-bold">5/5</span>
+                  {t("unlock.remainingAttempts")} <span className="text-on-surface font-bold">5/5</span>
                 </span>
               </div>
             </div>
@@ -152,7 +149,7 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
           {/* Secondary Links */}
           <div className="mt-8 flex justify-center gap-6">
             <button className="text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors">
-              Forgot Master Password?
+              {t("unlock.forgotPassword")}
             </button>
           </div>
         </div>
@@ -161,7 +158,7 @@ export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps)
       {/* Footer */}
       <footer className="flex justify-between items-center px-4 h-8 bg-surface-container-low border-t border-surface-container-high/30 text-xs">
         <div className="flex items-center gap-4">
-          <span className="text-emerald-600 font-bold">Status: Secure</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{t("status.secure")}</span>
         </div>
         <div className="text-on-surface-variant">v0.1.0</div>
       </footer>

@@ -56,6 +56,8 @@ pub struct GitSyncSession {
 pub struct AppState {
     /// The current vault session (if any)
     pub session: RwLock<Option<VaultSession>>,
+    /// Subscription vault (in-memory only, not persisted)
+    pub subscription_vault: RwLock<Option<Vault>>,
     /// Application configuration
     pub config: AsyncRwLock<AppConfig>,
 }
@@ -65,6 +67,7 @@ impl AppState {
     pub fn new(config: AppConfig) -> Self {
         Self {
             session: RwLock::new(None),
+            subscription_vault: RwLock::new(None),
             config: AsyncRwLock::new(config),
         }
     }
