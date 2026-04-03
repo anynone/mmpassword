@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{AppError, Result};
-use crate::models::{GitRepoMeta, VaultMeta};
+use crate::models::{GitRepoMeta, SubscriptionMeta, VaultMeta};
 
 /// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +27,9 @@ pub struct AppConfig {
     pub last_vault_path: Option<String>,
     /// Recent Git repositories
     pub recent_git_repos: Vec<GitRepoMeta>,
+    /// Subscription URL history
+    #[serde(default)]
+    pub subscription_history: Vec<SubscriptionMeta>,
     /// Window state
     pub window_state: WindowState,
 }
@@ -75,6 +78,7 @@ impl Default for AppConfig {
             recent_vaults: Vec::new(),
             last_vault_path: None,
             recent_git_repos: Vec::new(),
+            subscription_history: Vec::new(),
             window_state: WindowState::default(),
         }
     }
@@ -155,6 +159,23 @@ impl AppConfig {
     pub fn remove_recent_git_repo(&mut self, repo_url: &str, branch: &str) {
         self.recent_git_repos
             .retain(|r| !(r.repo_url == repo_url && r.branch == branch));
+    }
+
+    /// Add or update a subscription URL in history
+    pub fn add_subscription_history(&mut self, meta: SubscriptionMeta) {
+        // Remove if already exists (by URL)
+        self.subscription_history.retain(|s| s.url != meta.url);
+
+        // Add to front
+        self.subscription_history.insert(0, meta);
+
+        // Keep only last 10
+        self.subscription_history.truncate(10);
+    }
+
+    /// Remove a subscription URL from history
+    pub fn remove_subscription_history(&mut self, url: &str) {
+        self.subscription_history.retain(|s| s.url != url);
     }
 }
 

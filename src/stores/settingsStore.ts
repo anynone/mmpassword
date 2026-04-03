@@ -9,6 +9,9 @@ interface SettingsState {
   clipboardClearSeconds: number;
   openLastVault: boolean;
 
+  // Internal: preserve fields not managed by this store
+  _appConfig: AppConfig | null;
+
   // Actions
   loadSettings: () => Promise<void>;
   setTheme: (theme: Theme) => void;
@@ -26,6 +29,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   autoLockMinutes: 15,
   clipboardClearSeconds: 30,
   openLastVault: true,
+  _appConfig: null,
 
   // Actions
   loadSettings: async () => {
@@ -37,6 +41,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         autoLockMinutes: config.autoLockMinutes,
         clipboardClearSeconds: config.clipboardClearSeconds,
         openLastVault: config.openLastVault,
+        _appConfig: config,
       });
     } catch (error) {
       console.error("Failed to load settings:", error);
@@ -71,6 +76,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   saveSettings: async () => {
     try {
       const state = get();
+      const existing = state._appConfig;
       await invoke("update_config", {
         config: {
           theme: state.theme,
@@ -78,8 +84,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           autoLockMinutes: state.autoLockMinutes,
           clipboardClearSeconds: state.clipboardClearSeconds,
           openLastVault: state.openLastVault,
-          recentVaults: [],
-          windowState: {
+          recentVaults: existing?.recentVaults ?? [],
+          lastVaultPath: existing?.lastVaultPath,
+          windowState: existing?.windowState ?? {
             width: 1200,
             height: 800,
             maximized: false,

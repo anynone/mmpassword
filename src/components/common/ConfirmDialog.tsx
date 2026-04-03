@@ -1,5 +1,6 @@
 import { Modal } from "./Modal";
 import { Button } from "./Button";
+import { useTranslation } from "../../i18n";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -19,9 +20,11 @@ export function ConfirmDialog({
   onDiscard,
   onSave,
   onCancel,
-  saveLabel = "Save",
-  discardLabel = "Don't Save",
+  saveLabel,
+  discardLabel,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
+
   return (
     <Modal
       isOpen={isOpen}
@@ -31,13 +34,13 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="ghost" onClick={onCancel}>
-            Cancel
+            {t("confirm.cancel")}
           </Button>
           <Button variant="outline" onClick={onDiscard}>
-            {discardLabel}
+            {discardLabel || t("confirm.dontSave")}
           </Button>
           <Button onClick={onSave}>
-            {saveLabel}
+            {saveLabel || t("confirm.save")}
           </Button>
         </>
       }

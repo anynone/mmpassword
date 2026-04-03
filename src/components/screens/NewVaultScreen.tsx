@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useVaultStore } from "../../stores/vaultStore";
+import { useTranslation } from "../../i18n";
 
 interface NewVaultScreenProps {
   onCreated: () => void;
@@ -18,6 +19,7 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { createVault } = useVaultStore();
+  const { t } = useTranslation();
 
   const getPasswordStrength = () => {
     let strength = 0;
@@ -32,10 +34,10 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
 
   const getStrengthLabel = () => {
     const strength = getPasswordStrength();
-    if (strength < 40) return "Weak";
-    if (strength < 70) return "Medium";
-    if (strength < 90) return "Strong";
-    return "Very Strong";
+    if (strength < 40) return t("newVault.strength.weak");
+    if (strength < 70) return t("newVault.strength.medium");
+    if (strength < 90) return t("newVault.strength.strong");
+    return t("newVault.strength.veryStrong");
   };
 
   const handleBrowse = async () => {
@@ -55,19 +57,19 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
 
     // Validation
     if (!name.trim()) {
-      setError("Please enter a vault name.");
+      setError(t("newVault.error.nameRequired"));
       return;
     }
     if (!path) {
-      setError("Please select a save location.");
+      setError(t("newVault.error.locationRequired"));
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("newVault.error.passwordLength"));
       return;
     }
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t("newVault.error.passwordMismatch"));
       return;
     }
 
@@ -93,14 +95,6 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
             mmpassword
           </span>
         </div>
-        <div className="flex items-center gap-4">
-          <button className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all">
-            <span className="material-symbols-outlined">lock</span>
-          </button>
-          <button className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all">
-            <span className="material-symbols-outlined">settings</span>
-          </button>
-        </div>
       </header>
 
       {/* Main Content */}
@@ -116,10 +110,10 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
           {/* Modal Header */}
           <div className="px-8 py-6 glass-header border-b border-outline-variant/10">
             <h1 className="font-headline font-bold text-2xl tracking-tight text-on-surface">
-              New Vault
+              {t("newVault.title")}
             </h1>
             <p className="text-sm text-on-surface-variant mt-1">
-              Initialize a secure, encrypted storage container for your credentials.
+              {t("newVault.subtitle")}
             </p>
           </div>
 
@@ -130,25 +124,25 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-xl">info</span>
                 <h2 className="font-headline font-semibold text-lg text-on-surface">
-                  Vault Information
+                  {t("newVault.vaultInfo")}
                 </h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">
-                    Vault Name
+                    {t("newVault.vaultName")}
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-surface-container-highest border-none rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-lowest transition-all duration-200 outline-none"
-                    placeholder="e.g. Work Portfolio"
+                    placeholder={t("newVault.vaultNamePlaceholder")}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">
-                    Save Location
+                    {t("newVault.saveLocation")}
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -156,7 +150,7 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
                       value={path}
                       onChange={(e) => setPath(e.target.value)}
                       className="flex-grow bg-surface-container-highest border-none rounded-lg px-4 py-3 text-on-surface-variant text-sm truncate focus:outline-none cursor-default"
-                      placeholder="Click Browse to select..."
+                      placeholder={t("newVault.browsePlaceholder")}
                       readOnly
                     />
                     <button
@@ -164,7 +158,7 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
                       onClick={handleBrowse}
                       className="px-4 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold text-sm rounded-lg transition-all duration-200"
                     >
-                      Browse
+                      {t("newVault.browse")}
                     </button>
                   </div>
                 </div>
@@ -176,13 +170,13 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-xl">lock_open</span>
                 <h2 className="font-headline font-semibold text-lg text-on-surface">
-                  Set Master Password
+                  {t("newVault.setMasterPassword")}
                 </h2>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2 relative">
                   <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">
-                    Master Password
+                    {t("newVault.masterPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -205,7 +199,7 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">
-                    Confirm Password
+                    {t("newVault.confirmPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -232,7 +226,7 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
                   <div className="pt-2 space-y-2">
                     <div className="flex justify-between items-center px-1">
                       <span className="text-xs font-medium text-on-surface-variant">
-                        Password Strength
+                        {t("newVault.passwordStrength")}
                       </span>
                       <span
                         className={`text-xs font-bold px-2 py-0.5 rounded-full ${
@@ -257,7 +251,7 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
                       ))}
                     </div>
                     <p className="text-[10px] text-on-surface-variant italic px-1">
-                      Tip: Use at least 12 characters with mixed symbols and numbers.
+                      {t("newVault.passwordTip")}
                     </p>
                   </div>
                 )}
@@ -272,10 +266,9 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
                 </span>
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-on-surface">Zero-Knowledge Encryption</p>
+                <p className="text-sm font-semibold text-on-surface">{t("newVault.zeroKnowledge")}</p>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Your master password is never stored on our servers. If lost, the vault cannot be
-                  recovered. Ensure you keep a physical backup of your master key.
+                  {t("newVault.zeroKnowledgeDesc")}
                 </p>
               </div>
             </div>
@@ -292,14 +285,14 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
               onClick={onBack}
               className="px-6 py-2.5 font-semibold text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-200"
             >
-              Cancel
+              {t("newVault.cancel")}
             </button>
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || !name || !path || !password || password !== confirmPassword}
               className="px-8 py-2.5 bg-primary-gradient text-on-primary font-bold text-sm rounded-lg shadow-md hover:shadow-lg active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Creating..." : "Create Vault"}
+              {isSubmitting ? t("newVault.creating") : t("newVault.createVault")}
             </button>
           </div>
         </div>
@@ -308,7 +301,7 @@ export function NewVaultScreen({ onCreated, onBack }: NewVaultScreenProps) {
       {/* Footer */}
       <footer className="flex justify-between items-center px-4 h-8 bg-surface-container-low border-t border-surface-variant/20 text-xs">
         <div className="flex gap-4">
-          <span className="text-emerald-600 font-bold">Status: Secure</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{t("status.secure")}</span>
         </div>
         <div className="text-on-surface-variant">v0.1.0</div>
       </footer>

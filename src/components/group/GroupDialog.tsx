@@ -4,6 +4,7 @@ import { Button } from "../common/Button";
 import { Input } from "../common/Input";
 import { useVaultStore } from "../../stores/vaultStore";
 import { useToast } from "../common/Toast";
+import { useTranslation } from "../../i18n";
 import type { Group } from "../../types";
 
 interface GroupDialogProps {
@@ -38,6 +39,7 @@ const iconOptions = [
 export function GroupDialog({ isOpen, onClose, group }: GroupDialogProps) {
   const { createGroup, updateGroup, deleteGroup } = useVaultStore();
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("folder");
@@ -61,7 +63,7 @@ export function GroupDialog({ isOpen, onClose, group }: GroupDialogProps) {
 
     try {
       if (!name.trim()) {
-        showToast("error", "Group name is required");
+        showToast("error", t("group.nameRequired"));
         setIsSubmitting(false);
         return;
       }
@@ -71,10 +73,10 @@ export function GroupDialog({ isOpen, onClose, group }: GroupDialogProps) {
           name: name.trim(),
           icon,
         });
-        showToast("success", "Group updated successfully");
+        showToast("success", t("group.updated"));
       } else {
         await createGroup(name.trim(), icon);
-        showToast("success", "Group created successfully");
+        showToast("success", t("group.created"));
       }
 
       onClose();
@@ -89,7 +91,7 @@ export function GroupDialog({ isOpen, onClose, group }: GroupDialogProps) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode ? "Edit Group" : "New Group"}
+      title={isEditMode ? t("group.editGroup") : t("group.newGroup")}
       size="sm"
       footer={
         <>
@@ -97,43 +99,43 @@ export function GroupDialog({ isOpen, onClose, group }: GroupDialogProps) {
             <Button
               variant="danger"
               onClick={async () => {
-                if (group && confirm("Delete this group? Entries will be moved to root.")) {
+                if (group && confirm(t("group.deleteConfirm"))) {
                   await deleteGroup(group.id);
-                  showToast("success", "Group deleted");
+                  showToast("success", t("group.deleted"));
                   onClose();
                 }
               }}
             >
-              Delete
+              {t("group.delete")}
             </Button>
           )}
           <div className="flex-1" />
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            {t("group.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
             loading={isSubmitting}
             disabled={!name.trim()}
           >
-            {isEditMode ? "Save" : "Create"}
+            {isEditMode ? t("group.save") : t("group.create")}
           </Button>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <Input
-          label="Group Name"
+          label={t("group.groupName")}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Work Accounts"
+          placeholder={t("group.groupNamePlaceholder")}
           leftIcon="folder"
           required
         />
 
         <div className="space-y-2">
           <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">
-            Icon
+            {t("group.icon")}
           </label>
           <div className="grid grid-cols-5 gap-2">
             {iconOptions.map((iconName) => (

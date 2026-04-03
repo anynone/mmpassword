@@ -7,6 +7,7 @@ import { UnlockScreen } from "./components/screens/UnlockScreen";
 import { MainScreen } from "./components/screens/MainScreen";
 import { NewVaultScreen } from "./components/screens/NewVaultScreen";
 import { ThemeProvider, ToastProvider } from "./components/common";
+import { useTranslation } from "./i18n";
 
 export type AppScreen = "welcome" | "unlock" | "main" | "newVault";
 
@@ -44,6 +45,7 @@ function App() {
 
   const { vault, isUnlocked, openGitVault, createGitVault } = useVaultStore();
   const { loadSettings } = useSettingsStore();
+  const { t } = useTranslation();
 
   // Load settings on mount
   useEffect(() => {
@@ -94,8 +96,8 @@ function App() {
   ) => {
     setLoading({
       isLoading: true,
-      message: "Opening Vault from Git",
-      subMessage: "Cloning repository and decrypting...",
+      message: t("app.openingGitVault"),
+      subMessage: t("app.openingGitVaultDesc"),
     });
     try {
       await openGitVault(repoUrl, branch, vaultPath, keyPath, password);
@@ -119,8 +121,8 @@ function App() {
   ) => {
     setLoading({
       isLoading: true,
-      message: "Creating Vault in Git Repository",
-      subMessage: "Initializing repository and encrypting vault...",
+      message: t("app.creatingGitVault"),
+      subMessage: t("app.creatingGitVaultDesc"),
     });
     try {
       await createGitVault(repoUrl, branch, vaultPath, keyPath, name, password);
@@ -143,6 +145,7 @@ function App() {
               onCreateVault={handleCreateVault}
               onOpenGitVault={handleOpenGitVault}
               onCreateGitVault={handleCreateGitVault}
+              onSubscriptionFetched={() => setCurrentScreen("main")}
             />
           )}
 

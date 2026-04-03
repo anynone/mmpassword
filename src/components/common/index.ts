@@ -7,3 +7,4 @@ export { ToastProvider, useToast } from "./Toast";
 export { IconButton } from "./IconButton";
 export { PasswordStrengthIndicator } from "./PasswordStrengthIndicator";
 export { EmptyState } from "./EmptyState";
+export { Toggle } from "./Toggle";

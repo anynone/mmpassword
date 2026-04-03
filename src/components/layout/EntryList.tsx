@@ -5,20 +5,24 @@ import { useVaultStore } from "../../stores/vaultStore";
 import { IconButton } from "../common/IconButton";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { useToast } from "../common/Toast";
+import { useTranslation } from "../../i18n";
 
 interface EntryListProps {
   entries: Entry[];
   selectedEntryId: string | null;
   onDeleteEntry: (entry: Entry) => void;
+  isSubscriptionEntry?: (entryId: string) => boolean;
 }
 
 export function EntryList({
   entries,
   selectedEntryId,
   onDeleteEntry,
+  isSubscriptionEntry: isSubscriptionEntryProp,
 }: EntryListProps) {
-  const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry } = useVaultStore();
+  const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry, isSubscriptionEntry: isSubscriptionEntryStore } = useVaultStore();
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [contextMenu, setContextMenu] = useState<{
@@ -69,7 +73,17 @@ export function EntryList({
   };
 
   const handleCreateEntry = () => {
-    guardAndNavigate(() => startCreating(useVaultStore.getState().selectedGroupId || undefined));
+    // Check if selected group is a subscription group
+    const currentGroupId = useVaultStore.getState().selectedGroupId;
+    if (currentGroupId) {
+      // Check if the group is from subscription
+      const subscriptionGroupIds = useVaultStore.getState().subscriptionGroups.map(g => g.id);
+      if (subscriptionGroupIds.includes(currentGroupId)) {
+        showToast("info", t("subscription.cannotModify"));
+        return;
+      }
+    }
+    guardAndNavigate(() => startCreating(currentGroupId || undefined));
   };
 
   const handleContextMenu = (e: React.MouseEvent, entryId: string) => {
@@ -83,7 +97,13 @@ export function EntryList({
     if (contextMenu) {
       const entry = entries.find((e) => e.id === contextMenu.entryId);
       if (entry) {
-        guardAndNavigate(() => startEditing(entry));
+        // Check if it's a subscription entry
+        const isSub = isSubscriptionEntryProp ? isSubscriptionEntryProp(entry.id) : isSubscriptionEntryStore(entry.id);
+        if (isSub) {
+          showToast("info", t("subscription.cannotModify"));
+        } else {
+          guardAndNavigate(() => startEditing(entry));
+        }
       }
     }
     closeContextMenu();
@@ -92,7 +112,15 @@ export function EntryList({
   const handleDelete = () => {
     if (contextMenu) {
       const entry = entries.find((e) => e.id === contextMenu.entryId);
-      if (entry) onDeleteEntry(entry);
+      if (entry) {
+        // Check if it's a subscription entry
+        const isSub = isSubscriptionEntryProp ? isSubscriptionEntryProp(entry.id) : isSubscriptionEntryStore(entry.id);
+        if (isSub) {
+          showToast("info", t("subscription.cannotModify"));
+        } else {
+          onDeleteEntry(entry);
+        }
+      }
     }
     closeContextMenu();
   };
@@ -103,7 +131,7 @@ export function EntryList({
       const field = entry?.fields.find((f) => f.name.toLowerCase() === "username");
       if (field?.value) {
         await writeText(field.value);
-        showToast("success", "Username copied to clipboard");
+        showToast("success", t("entryList.usernameCopied"));
       }
     }
     closeContextMenu();
@@ -115,7 +143,7 @@ export function EntryList({
       const field = entry?.fields.find((f) => f.name.toLowerCase() === "password");
       if (field?.value) {
         await writeText(field.value);
-        showToast("success", "Password copied to clipboard");
+        showToast("success", t("entryList.passwordCopied"));
       }
     }
     closeContextMenu();
@@ -139,12 +167,12 @@ export function EntryList({
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-outline-variant/20">
         <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">
-          Entries
+          {t("entryList.entries")}
         </span>
         <IconButton
           icon="add"
           size="sm"
-          tooltip="New Entry"
+          tooltip={t("entryList.newEntry")}
           onClick={handleCreateEntry}
         />
       </div>
@@ -159,7 +187,7 @@ export function EntryList({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search entries..."
+            placeholder={t("entryList.search")}
             className="w-full bg-surface-container-highest border-none rounded-lg pl-10 pr-4 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary/40 outline-none transition-all"
           />
         </div>
@@ -180,8 +208,8 @@ export function EntryList({
               <span className="material-symbols-outlined text-lg text-primary">add</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium italic text-primary">New Entry</p>
-              <p className="text-xs text-on-surface-variant italic">Editing...</p>
+              <p className="text-sm font-medium italic text-primary">{t("entryList.newEntry")}</p>
+              <p className="text-xs text-on-surface-variant italic">{t("entryList.editing")}</p>
             </div>
           </button>
         )}
@@ -192,11 +220,13 @@ export function EntryList({
               {searchQuery ? "search_off" : "key"}
             </span>
             <p className="text-sm text-on-surface-variant">
-              {searchQuery ? "No entries found" : "No entries yet"}
+              {searchQuery ? t("entryList.noEntriesFound") : t("entryList.noEntriesYet")}
             </p>
           </div>
         ) : (
-          filteredEntries.map((entry) => (
+          filteredEntries.map((entry) => {
+            const isSub = isSubscriptionEntryProp ? isSubscriptionEntryProp(entry.id) : isSubscriptionEntryStore(entry.id);
+            return (
             <button
               key={entry.id}
               onClick={() => handleSelectEntry(entry.id)}
@@ -209,26 +239,33 @@ export function EntryList({
                     ? "bg-primary-container text-on-primary-container"
                     : "text-on-surface hover:bg-surface-container-high"
                 }
+                ${isSub ? "opacity-80" : ""}
               `}
             >
               <div
                 className={`
                   w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
-                  ${selectedEntryId === entry.id ? "bg-primary/20" : "bg-surface-container-high"}
+                  ${selectedEntryId === entry.id ? "bg-primary/20" : isSub ? "bg-tertiary-container" : "bg-surface-container-high"}
                 `}
               >
-                <span className="material-symbols-outlined text-lg">
+                <span className={`material-symbols-outlined text-lg ${isSub ? "text-on-tertiary-container" : ""}`}>
                   {getEntryIcon(entry)}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{entry.title}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-medium truncate">{entry.title}</p>
+                  {isSub && (
+                    <span className="material-symbols-outlined text-xs text-on-surface-variant" title={t("subscription.readOnly")}>lock</span>
+                  )}
+                </div>
                 <p className="text-xs text-on-surface-variant truncate">
-                  {entry.fields.find((f) => f.name === "username")?.value || "No username"}
+                  {entry.fields.find((f) => f.name === "username")?.value || t("entryList.noUsername")}
                 </p>
               </div>
             </button>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -248,14 +285,14 @@ export function EntryList({
               className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-on-surface hover:bg-surface-container-high"
             >
               <span className="material-symbols-outlined text-lg">content_copy</span>
-              Copy Username
+              {t("entryList.copyUsername")}
             </button>
             <button
               onClick={handleCopyPassword}
               className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-on-surface hover:bg-surface-container-high"
             >
               <span className="material-symbols-outlined text-lg">content_copy</span>
-              Copy Password
+              {t("entryList.copyPassword")}
             </button>
             <div className="border-t border-outline-variant/20 my-1" />
             <button
@@ -263,14 +300,14 @@ export function EntryList({
               className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-on-surface hover:bg-surface-container-high"
             >
               <span className="material-symbols-outlined text-lg">edit</span>
-              Edit
+              {t("sideNav.edit")}
             </button>
             <button
               onClick={handleDelete}
               className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-error hover:bg-error-container/20"
             >
               <span className="material-symbols-outlined text-lg">delete</span>
-              Delete
+              {t("sideNav.delete")}
             </button>
           </div>
         </>
@@ -279,8 +316,8 @@ export function EntryList({
       {/* Unsaved Changes Confirm Dialog */}
       <ConfirmDialog
         isOpen={confirmState.isOpen}
-        title="Unsaved Changes"
-        message="You have unsaved changes. Do you want to save them before leaving?"
+        title={t("confirm.unsavedChanges")}
+        message={t("confirm.unsavedChangesMessage")}
         onDiscard={handleConfirmDiscard}
         onSave={handleConfirmSave}
         onCancel={handleConfirmCancel}
