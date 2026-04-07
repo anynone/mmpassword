@@ -3,11 +3,11 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useVaultStore } from "../../stores/vaultStore";
 import { useSettingsStore } from "../../stores/settingsStore";
-import type { VaultMeta, GitRepoMeta, SubscriptionMeta } from "../../types";
+import type { VaultMeta, GitRepoMeta } from "../../types";
 import { GitRepoSetup } from "../git/GitRepoSetup";
 import { SettingsModal } from "../settings";
+import { Modal } from "../common";
 import { useTranslation } from "../../i18n";
-import { useToast } from "../common/Toast";
 
 interface WelcomeScreenProps {
   onOpenVault: (path: string) => void;
@@ -27,7 +27,6 @@ interface WelcomeScreenProps {
     name: string,
     password: string
   ) => void;
-  onSubscriptionFetched?: () => void;
 }
 
 export function WelcomeScreen({
@@ -35,22 +34,18 @@ export function WelcomeScreen({
   onCreateVault,
   onOpenGitVault,
   onCreateGitVault,
-  onSubscriptionFetched,
 }: WelcomeScreenProps) {
   const [recentVaults, setRecentVaults] = useState<VaultMeta[]>([]);
   const [recentGitRepos, setRecentGitRepos] = useState<GitRepoMeta[]>([]);
-  const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionMeta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showGitSetup, setShowGitSetup] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedGitRepo, setSelectedGitRepo] = useState<GitRepoMeta | null>(null);
-  const [subscriptionUrl, setSubscriptionUrl] = useState("");
-  const [isFetchingSubscription, setIsFetchingSubscription] = useState(false);
-  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  const [showAllVaults, setShowAllVaults] = useState(false);
+  const [showAllGitRepos, setShowAllGitRepos] = useState(false);
 
-  const { getRecentVaults, fetchSubscription, getSubscriptionHistory, removeSubscriptionHistory } = useVaultStore();
+  const { getRecentVaults } = useVaultStore();
   const { openLastVault, setOpenLastVault } = useSettingsStore();
-  const { showToast } = useToast();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -66,10 +61,6 @@ export function WelcomeScreen({
       // Load recent git repos
       const gitRepos = await invoke<GitRepoMeta[]>("get_recent_git_repos");
       setRecentGitRepos(gitRepos);
-
-      // Load subscription history
-      const subHistory = await getSubscriptionHistory();
-      setSubscriptionHistory(subHistory);
     } catch (error) {
       console.error("Failed to load recent data:", error);
     } finally {
@@ -124,48 +115,8 @@ export function WelcomeScreen({
     return d.toLocaleDateString();
   };
 
-  const handleFetchSubscription = async () => {
-    if (!subscriptionUrl.trim()) return;
-    setIsFetchingSubscription(true);
-    setSubscriptionError(null);
-    try {
-      await fetchSubscription(subscriptionUrl.trim());
-      showToast("success", t("subscription.fetchSuccess"));
-      // Reload history
-      const history = await getSubscriptionHistory();
-      setSubscriptionHistory(history);
-      if (onSubscriptionFetched) onSubscriptionFetched();
-    } catch (error) {
-      setSubscriptionError(String(error));
-      showToast("error", String(error));
-    } finally {
-      setIsFetchingSubscription(false);
-    }
-  };
-
-  const handleQuickFetch = async (url: string) => {
-    setSubscriptionUrl(url);
-    setIsFetchingSubscription(true);
-    setSubscriptionError(null);
-    try {
-      await fetchSubscription(url);
-      showToast("success", t("subscription.fetchSuccess"));
-      if (onSubscriptionFetched) onSubscriptionFetched();
-    } catch (error) {
-      setSubscriptionError(String(error));
-      showToast("error", String(error));
-    } finally {
-      setIsFetchingSubscription(false);
-    }
-  };
-
-  const handleRemoveSubscriptionHistory = async (url: string) => {
-    await removeSubscriptionHistory(url);
-    setSubscriptionHistory(prev => prev.filter(s => s.url !== url));
-  };
-
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col">
       {/* Top Navigation Bar */}
       <header className="flex items-center justify-between px-6 py-2 bg-surface/80 backdrop-blur-xl border-b border-surface-container-high/30">
         <div className="flex items-center gap-3">
@@ -189,32 +140,32 @@ export function WelcomeScreen({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-12 overflow-y-auto custom-scrollbar">
+      <main className="flex-1 p-6 pt-8 overflow-y-auto custom-scrollbar">
         <div className="max-w-4xl mx-auto">
-          <header className="mb-12">
-            <h1 className="text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-2">
+          <header className="mb-6">
+            <h1 className="text-3xl font-headline font-extrabold text-on-surface tracking-tight mb-1">
               {t("welcome.title")}
             </h1>
-            <p className="text-on-surface-variant text-lg">
+            <p className="text-on-surface-variant text-base">
               {t("welcome.subtitle")}
             </p>
           </header>
 
           {/* Recent Vaults */}
-          <section className="mb-12">
-            <h3 className="font-headline font-bold text-on-surface flex items-center gap-2 mb-4">
+          <section className="mb-6">
+            <h3 className="font-headline font-bold text-on-surface flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined text-primary">folder_open</span>
               {t("welcome.recentVaults")}
             </h3>
             {isLoading ? (
               <div className="text-on-surface-variant">Loading...</div>
             ) : recentVaults.length > 0 ? (
-              <div className="space-y-3">
-                {recentVaults.map((vault) => (
+              <div className="space-y-2">
+                {recentVaults.slice(0, 3).map((vault) => (
                   <button
                     key={vault.path}
                     onClick={() => onOpenVault(vault.path)}
-                    className="w-full group bg-surface-container-lowest p-4 rounded-xl shadow-ambient hover:bg-white dark:hover:bg-surface-container-high transition-all cursor-pointer border border-transparent hover:border-primary/20 text-left"
+                    className="w-full group bg-surface-container-lowest p-3 rounded-xl shadow-ambient hover:bg-white dark:hover:bg-surface-container-high transition-all cursor-pointer border border-transparent hover:border-primary/20 text-left"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -230,6 +181,14 @@ export function WelcomeScreen({
                     </div>
                   </button>
                 ))}
+                {recentVaults.length > 3 && (
+                  <button
+                    onClick={() => setShowAllVaults(true)}
+                    className="w-full text-center py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                  >
+                    {t("welcome.viewMore")}
+                  </button>
+                )}
               </div>
             ) : (
               <p className="text-on-surface-variant">{t("welcome.noRecentVaults")}</p>
@@ -238,21 +197,20 @@ export function WelcomeScreen({
 
           {/* Recent Git Repositories */}
           {recentGitRepos.length > 0 && (
-            <section className="mb-12">
-              <h3 className="font-headline font-bold text-on-surface flex items-center gap-2 mb-4">
+            <section className="mb-6">
+              <h3 className="font-headline font-bold text-on-surface flex items-center gap-2 mb-3">
                 <span className="material-symbols-outlined text-primary">cloud_sync</span>
                 {t("welcome.recentGitRepos")}
               </h3>
-              <div className="space-y-3">
-                {recentGitRepos.map((repo) => (
+              <div className="space-y-2">
+                {recentGitRepos.slice(0, 3).map((repo) => (
                   <button
                     key={`${repo.repoUrl}-${repo.branch}`}
                     onClick={() => {
-                      // Set the selected repo and show git setup
                       setSelectedGitRepo(repo);
                       setShowGitSetup(true);
                     }}
-                    className="w-full group bg-surface-container-lowest p-4 rounded-xl shadow-ambient hover:bg-white dark:hover:bg-surface-container-high transition-all cursor-pointer border border-transparent hover:border-primary/20 text-left"
+                    className="w-full group bg-surface-container-lowest p-3 rounded-xl shadow-ambient hover:bg-white dark:hover:bg-surface-container-high transition-all cursor-pointer border border-transparent hover:border-primary/20 text-left"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -267,118 +225,47 @@ export function WelcomeScreen({
                     </div>
                   </button>
                 ))}
+                {recentGitRepos.length > 3 && (
+                  <button
+                    onClick={() => setShowAllGitRepos(true)}
+                    className="w-full text-center py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                  >
+                    {t("welcome.viewMore")}
+                  </button>
+                )}
               </div>
             </section>
           )}
 
-          {/* Subscription Vault */}
-          <section className="mb-12">
-            <h3 className="font-headline font-bold text-on-surface flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-primary">rss_feed</span>
-              {t("subscription.title")}
-            </h3>
-            <div className="bg-surface-container-lowest p-4 rounded-xl shadow-ambient border border-outline-variant/10">
-              <div className="flex gap-3">
-                <input
-                  type="url"
-                  value={subscriptionUrl}
-                  onChange={(e) => {
-                    setSubscriptionUrl(e.target.value);
-                    setSubscriptionError(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleFetchSubscription();
-                  }}
-                  placeholder={t("subscription.urlPlaceholder")}
-                  className="flex-1 bg-surface-container-highest rounded-lg px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary/40 outline-none transition-all border border-outline-variant/20"
-                  disabled={isFetchingSubscription}
-                />
-                <button
-                  onClick={handleFetchSubscription}
-                  disabled={isFetchingSubscription || !subscriptionUrl.trim()}
-                  className="px-6 py-2.5 bg-primary text-on-primary rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isFetchingSubscription ? (
-                    <>
-                      <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
-                      {t("subscription.fetching")}
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-lg">download</span>
-                      {t("subscription.fetch")}
-                    </>
-                  )}
-                </button>
-              </div>
-              {subscriptionError && (
-                <p className="text-error text-xs mt-2">{subscriptionError}</p>
-              )}
-            </div>
-
-            {/* Subscription History */}
-            {subscriptionHistory.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">
-                  {t("subscription.history")}
-                </h4>
-                <div className="space-y-2">
-                  {subscriptionHistory.map((sub) => (
-                    <div
-                      key={sub.url}
-                      className="flex items-center justify-between bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10 group"
-                    >
-                      <button
-                        onClick={() => handleQuickFetch(sub.url)}
-                        className="flex-1 text-left hover:bg-surface-container-high rounded-lg px-2 py-1 -ml-2 transition-colors"
-                        disabled={isFetchingSubscription}
-                      >
-                        <p className="font-medium text-sm text-on-surface">{sub.name}</p>
-                        <p className="text-xs text-on-surface-variant mt-0.5">
-                          {t("subscription.entryCount", { count: sub.entryCount })} • {formatLastAccessed(sub.lastAccessed)}
-                        </p>
-                      </button>
-                      <button
-                        onClick={() => handleRemoveSubscriptionHistory(sub.url)}
-                        className="p-1.5 rounded-full hover:bg-error-container/20 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <span className="material-symbols-outlined text-sm text-on-surface-variant hover:text-error">close</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-          <div className="grid grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-3 gap-4 mb-6">
             <button
               onClick={onCreateVault}
-              className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-primary/5 hover:bg-primary/10 transition-all group border border-primary/10"
+              className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-primary/5 hover:bg-primary/10 transition-all group border border-primary/10"
             >
-              <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-lg group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">add</span>
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-lg group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-2xl">add</span>
               </div>
-              <span className="font-headline font-bold text-primary">{t("welcome.newVault")}</span>
+              <span className="font-headline font-bold text-sm text-primary">{t("welcome.newVault")}</span>
             </button>
 
             <button
               onClick={handleOpenFile}
-              className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-secondary-container/20 hover:bg-secondary-container/40 transition-all group border border-secondary-container/20"
+              className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-secondary-container/20 hover:bg-secondary-container/40 transition-all group border border-secondary-container/20"
             >
-              <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center text-on-secondary shadow-lg group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">folder_open</span>
+              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-on-secondary shadow-lg group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-2xl">folder_open</span>
               </div>
-              <span className="font-headline font-bold text-secondary">{t("welcome.openLocalFile")}</span>
+              <span className="font-headline font-bold text-sm text-secondary">{t("welcome.openLocalFile")}</span>
             </button>
 
             <button
               onClick={() => setShowGitSetup(true)}
-              className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-surface-container-highest hover:bg-surface-container-high transition-all group border border-outline-variant/30"
+              className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-surface-container-highest hover:bg-surface-container-high transition-all group border border-outline-variant/30"
             >
-              <div className="w-14 h-14 rounded-full bg-on-surface flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                <span className="material-symbols-outlined text-3xl">cloud_sync</span>
+              <div className="w-12 h-12 rounded-full bg-on-surface flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-2xl">cloud_sync</span>
               </div>
-              <span className="font-headline font-bold text-on-surface">{t("welcome.connectGitRepo")}</span>
+              <span className="font-headline font-bold text-sm text-on-surface">{t("welcome.connectGitRepo")}</span>
             </button>
           </div>
 
@@ -427,6 +314,74 @@ export function WelcomeScreen({
           </div>
         </div>
       )}
+
+      {/* All Recent Vaults Modal */}
+      <Modal
+        isOpen={showAllVaults}
+        onClose={() => setShowAllVaults(false)}
+        title={t("welcome.allRecentVaults")}
+        size="lg"
+      >
+        <div className="space-y-2">
+          {recentVaults.map((vault) => (
+            <button
+              key={vault.path}
+              onClick={() => {
+                setShowAllVaults(false);
+                onOpenVault(vault.path);
+              }}
+              className="w-full group bg-surface-container-lowest p-3 rounded-xl shadow-ambient hover:bg-white dark:hover:bg-surface-container-high transition-all cursor-pointer border border-transparent hover:border-primary/20 text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-on-surface">{vault.name}</p>
+                  <p className="text-xs text-on-surface-variant mt-0.5">
+                    {formatLastAccessed(vault.lastAccessed)} •{" "}
+                    {vault.isGithub ? t("welcome.git") : t("welcome.localStorage")}
+                  </p>
+                </div>
+                <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">
+                  chevron_right
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </Modal>
+
+      {/* All Recent Git Repos Modal */}
+      <Modal
+        isOpen={showAllGitRepos}
+        onClose={() => setShowAllGitRepos(false)}
+        title={t("welcome.allRecentGitRepos")}
+        size="lg"
+      >
+        <div className="space-y-2">
+          {recentGitRepos.map((repo) => (
+            <button
+              key={`${repo.repoUrl}-${repo.branch}`}
+              onClick={() => {
+                setShowAllGitRepos(false);
+                setSelectedGitRepo(repo);
+                setShowGitSetup(true);
+              }}
+              className="w-full group bg-surface-container-lowest p-3 rounded-xl shadow-ambient hover:bg-white dark:hover:bg-surface-container-high transition-all cursor-pointer border border-transparent hover:border-primary/20 text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-on-surface">{repo.repoName}</p>
+                  <p className="text-xs text-on-surface-variant mt-0.5">
+                    {repo.branch} • {formatLastAccessed(repo.lastAccessed)}
+                  </p>
+                </div>
+                <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">
+                  chevron_right
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -145,7 +145,6 @@ function App() {
               onCreateVault={handleCreateVault}
               onOpenGitVault={handleOpenGitVault}
               onCreateGitVault={handleCreateGitVault}
-              onSubscriptionFetched={() => setCurrentScreen("main")}
             />
           )}
 

@@ -92,6 +92,9 @@ export const translations: Record<string, Record<string, string>> = {
     "welcome.daysAgo": "{days} days ago",
     "welcome.localStorage": "Local Storage",
     "welcome.git": "Git",
+    "welcome.viewMore": "View More",
+    "welcome.allRecentVaults": "All Recent Vaults",
+    "welcome.allRecentGitRepos": "All Recent Git Repositories",
 
     // UnlockScreen
     "unlock.backToWelcome": "Back to Welcome",
@@ -279,6 +282,9 @@ export const translations: Record<string, Record<string, string>> = {
     "welcome.daysAgo": "{days} 天前",
     "welcome.localStorage": "本地存储",
     "welcome.git": "Git",
+    "welcome.viewMore": "查看更多",
+    "welcome.allRecentVaults": "所有最近的密码库",
+    "welcome.allRecentGitRepos": "所有最近的 Git 仓库",
 
     // UnlockScreen
     "unlock.backToWelcome": "返回欢迎页",
