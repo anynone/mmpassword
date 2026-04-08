@@ -57,6 +57,7 @@ export const translations: Record<string, Record<string, string>> = {
     "entryList.passwordCopied": "Password copied to clipboard",
     "entryList.rename": "Rename",
     "entryList.renamed": "Entry renamed",
+    "entryList.movedToGroup": "Entry moved to group",
 
     // EntryDetail
     "entryDetail.newEntry": "New Entry",
@@ -250,6 +251,7 @@ export const translations: Record<string, Record<string, string>> = {
     "entryList.passwordCopied": "密码已复制到剪贴板",
     "entryList.rename": "重命名",
     "entryList.renamed": "条目已重命名",
+    "entryList.movedToGroup": "条目已移至分组",
 
     // EntryDetail
     "entryDetail.newEntry": "新建条目",

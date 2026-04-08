@@ -80,22 +80,25 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       const state = get();
       const existing = state._appConfig;
-      await invoke("update_config", {
-        config: {
-          theme: state.theme,
-          language: state.language,
-          autoLockMinutes: state.autoLockMinutes,
-          clipboardClearSeconds: state.clipboardClearSeconds,
-          openLastVault: state.openLastVault,
-          recentVaults: existing?.recentVaults ?? [],
-          lastVaultPath: existing?.lastVaultPath,
-          windowState: existing?.windowState ?? {
-            width: 1200,
-            height: 800,
-            maximized: false,
-          },
+      const config: AppConfig = {
+        theme: state.theme,
+        language: state.language,
+        autoLockMinutes: state.autoLockMinutes,
+        clipboardClearSeconds: state.clipboardClearSeconds,
+        openLastVault: state.openLastVault,
+        recentVaults: existing?.recentVaults ?? [],
+        lastVaultPath: existing?.lastVaultPath,
+        recentGitRepos: existing?.recentGitRepos ?? [],
+        subscriptionHistory: existing?.subscriptionHistory ?? [],
+        windowState: existing?.windowState ?? {
+          width: 1200,
+          height: 800,
+          maximized: false,
         },
-      });
+      };
+      await invoke("update_config", { config });
+      // Update _appConfig so subsequent saves preserve latest state
+      set({ _appConfig: config });
     } catch (error) {
       console.error("Failed to save settings:", error);
     }

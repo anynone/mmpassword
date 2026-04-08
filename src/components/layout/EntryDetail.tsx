@@ -4,26 +4,11 @@ import type { Entry } from "../../types"
 import type { FieldType } from "../../types"
 import { useVaultStore, type FieldInput } from "../../stores/vaultStore"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { ConfirmDialog } from "../common/ConfirmDialog"
 import { InlineField } from "../entry/InlineField"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
-
-const entryTypeOptions = [
-  { value: "websiteLogin", label: "Website Login" },
-  { value: "secureNote", label: "Secure Note" },
-]
 
 interface EntryDetailProps {
   entry: Entry | null
@@ -40,7 +25,6 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
     createEntry,
     updateEntry,
     isSubscriptionEntry,
-    groups,
   } = useVaultStore()
 
   const { showToast } = useToast()
@@ -213,7 +197,7 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
             )}
           </div>
           <div>
-            <h2 className="font-headline font-bold text-lg">{isCreating ? t("entryDetail.newEntry") : entry?.title ?? ""}</h2>
+            <h2 className="font-headline font-bold text-lg">{isCreating ? (formData?.title || t("entryDetail.newEntry")) : entry?.title ?? ""}</h2>
             {!isCreating && entry?.groupId && (
               <p className="text-xs text-muted-foreground">{t("entryDetail.inGroup")}</p>
             )}
@@ -259,71 +243,6 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-        {/* Creating mode: show title, entryType, group, favorite */}
-        {isCreating && formData && (
-          <div className="space-y-4 mb-6">
-            <div className="space-y-2">
-              <Label htmlFor="entry-title">Title</Label>
-              <Input
-                id="entry-title"
-                value={formData.title}
-                onChange={(e) => updateFormData({ title: e.target.value })}
-                placeholder="e.g., Gmail Account"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Entry Type</Label>
-              <Select
-                value={formData.entryType}
-                onValueChange={(value) => updateFormData({ entryType: value as any })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {entryTypeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Group</Label>
-              <Select
-                value={formData.groupId || "__none__"}
-                onValueChange={(value) => updateFormData({ groupId: value === "__none__" ? "" : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="No group (root)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No group (root)</SelectItem>
-                  {groups.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="entry-favorite"
-                checked={formData.favorite}
-                onCheckedChange={(checked) => updateFormData({ favorite: checked === true })}
-              />
-              <Label htmlFor="entry-favorite" className="cursor-pointer text-sm font-normal">
-                Mark as favorite
-              </Label>
-            </div>
-
-            <Separator />
-          </div>
-        )}
-
         {/* Fields section */}
         <div className="space-y-4">
           {displayFields.map((field, index) => (

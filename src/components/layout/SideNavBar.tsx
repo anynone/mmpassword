@@ -9,6 +9,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 import { ConfirmDialog } from "../common/ConfirmDialog"
+import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
 import { cn } from "@/lib/utils"
 import type { Group } from "../../types"
@@ -36,7 +37,36 @@ export function SideNavBar({
   const isEditingActive = useVaultStore((s) => s.isEditingActive)
   const cancelEditing = useVaultStore((s) => s.cancelEditing)
   const saveCurrentEditing = useVaultStore((s) => s.saveCurrentEditing)
+  const moveEntryToGroup = useVaultStore((s) => s.moveEntryToGroup)
   const { t } = useTranslation()
+  const { showToast } = useToast()
+
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null | undefined>(undefined)
+
+  const handleDragOver = (e: React.DragEvent, groupId: string | null) => {
+    if (e.dataTransfer.types.includes("application/entry-id")) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = "move"
+      setDragOverGroupId(groupId)
+    }
+  }
+
+  const handleDragLeave = () => {
+    setDragOverGroupId(undefined)
+  }
+
+  const handleDrop = async (e: React.DragEvent, groupId: string | null) => {
+    e.preventDefault()
+    setDragOverGroupId(undefined)
+    const entryId = e.dataTransfer.getData("application/entry-id")
+    if (!entryId) return
+    try {
+      await moveEntryToGroup(entryId, groupId)
+      showToast("success", t("entryList.movedToGroup"))
+    } catch (error) {
+      showToast("error", String(error))
+    }
+  }
 
   const [confirmState, setConfirmState] = useState<{
     isOpen: boolean
@@ -104,7 +134,13 @@ export function SideNavBar({
       <nav className="flex-1 overflow-y-auto custom-scrollbar py-2">
         <button
           onClick={() => handleSelectGroup(null)}
-          className={groupItemClasses(selectedGroupId === null)}
+          onDragOver={(e) => handleDragOver(e, null)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, null)}
+          className={cn(
+            groupItemClasses(selectedGroupId === null),
+            dragOverGroupId === null && "ring-2 ring-primary/50 bg-primary/5"
+          )}
         >
           <LayoutGrid className="h-5 w-5" />
           <span className="text-sm font-medium">{t("sideNav.allItems")}</span>
@@ -115,7 +151,13 @@ export function SideNavBar({
             <ContextMenuTrigger asChild>
               <button
                 onClick={() => handleSelectGroup(group.id)}
-                className={groupItemClasses(selectedGroupId === group.id)}
+                onDragOver={(e) => handleDragOver(e, group.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, group.id)}
+                className={cn(
+                  groupItemClasses(selectedGroupId === group.id),
+                  dragOverGroupId === group.id && "ring-2 ring-primary/50 bg-primary/5"
+                )}
               >
                 <Folder className="h-5 w-5" />
                 <span className="text-sm font-medium truncate">{group.name}</span>
