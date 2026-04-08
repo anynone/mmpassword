@@ -231,6 +231,7 @@ export function EntryList({
                 <ContextMenuTrigger asChild>
                   <button
                     onClick={() => handleSelectEntry(entry.id)}
+                    onDoubleClick={() => { if (!isSub) handleStartRename(entry, isSub) }}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150 border-b border-border/30",
                       selectedEntryId === entry.id
