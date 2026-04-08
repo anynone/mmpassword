@@ -8,6 +8,7 @@ interface SettingsState {
   autoLockMinutes: number;
   clipboardClearSeconds: number;
   openLastVault: boolean;
+  lastVaultPath: string | null;
 
   // Internal: preserve fields not managed by this store
   _appConfig: AppConfig | null;
@@ -29,6 +30,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   autoLockMinutes: 15,
   clipboardClearSeconds: 30,
   openLastVault: true,
+  lastVaultPath: null,
   _appConfig: null,
 
   // Actions
@@ -41,6 +43,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         autoLockMinutes: config.autoLockMinutes,
         clipboardClearSeconds: config.clipboardClearSeconds,
         openLastVault: config.openLastVault,
+        lastVaultPath: config.lastVaultPath ?? null,
         _appConfig: config,
       });
     } catch (error) {

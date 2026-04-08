@@ -1,3 +1,5 @@
+export { AppHeader } from "./AppHeader";
+export { AppFooter } from "./AppFooter";
 export { TopNavBar } from "./TopNavBar";
 export { SideNavBar } from "./SideNavBar";
 export { StatusBar } from "./StatusBar";

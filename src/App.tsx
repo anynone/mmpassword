@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Loader2 } from "lucide-react";
 import { useVaultStore } from "./stores/vaultStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { WelcomeScreen } from "./components/screens/WelcomeScreen";
@@ -7,6 +8,7 @@ import { UnlockScreen } from "./components/screens/UnlockScreen";
 import { MainScreen } from "./components/screens/MainScreen";
 import { NewVaultScreen } from "./components/screens/NewVaultScreen";
 import { ThemeProvider, ToastProvider } from "./components/common";
+import { Toaster } from "@/components/ui/sonner";
 import { useTranslation } from "./i18n";
 
 export type AppScreen = "welcome" | "unlock" | "main" | "newVault";
@@ -22,14 +24,12 @@ function LoadingOverlay({ loading }: { loading: LoadingState }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 min-w-[280px]">
-        <span className="material-symbols-outlined animate-spin text-primary text-5xl">
-          progress_activity
-        </span>
+      <div className="bg-card rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 min-w-[280px]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <div className="text-center">
-          <p className="font-headline font-bold text-on-surface">{loading.message}</p>
+          <p className="font-headline font-bold">{loading.message}</p>
           {loading.subMessage && (
-            <p className="text-sm text-on-surface-variant mt-1">{loading.subMessage}</p>
+            <p className="text-sm text-muted-foreground mt-1">{loading.subMessage}</p>
           )}
         </div>
       </div>
@@ -44,13 +44,23 @@ function App() {
   const [loading, setLoading] = useState<LoadingState>({ isLoading: false, message: "" });
 
   const { vault, isUnlocked, openGitVault, createGitVault } = useVaultStore();
-  const { loadSettings } = useSettingsStore();
+  const { loadSettings, openLastVault, lastVaultPath } = useSettingsStore();
   const { t } = useTranslation();
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Load settings on mount
   useEffect(() => {
-    loadSettings();
+    loadSettings().then(() => setSettingsLoaded(true));
   }, [loadSettings]);
+
+  // Auto-open last vault on startup
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    if (openLastVault && lastVaultPath && currentScreen === "welcome") {
+      setPendingVaultPath(lastVaultPath);
+      setCurrentScreen("unlock");
+    }
+  }, [settingsLoaded]);
 
   // Handle screen transitions based on vault state
   useEffect(() => {
@@ -170,6 +180,7 @@ function App() {
 
         {/* Global Loading Overlay */}
         <LoadingOverlay loading={loading} />
+        <Toaster richColors position="bottom-right" />
       </ToastProvider>
     </ThemeProvider>
   );

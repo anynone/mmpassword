@@ -1,92 +1,146 @@
-/* Google Fonts - Manrope and Inter */
+/* Google Fonts - Manrope, Inter, Material Symbols (kept until icon migration) */
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Material Design 3 Light Theme */
-:root {
-  --md-primary: 0 94 161;
-  --md-primary-container: 43 120 191;
-  --md-primary-fixed: 210 228 255;
-  --md-primary-fixed-dim: 160 202 255;
-  --md-secondary: 73 96 125;
-  --md-secondary-container: 196 220 254;
-  --md-tertiary: 123 85 0;
-  --md-tertiary-container: 154 108 0;
-  --md-surface: 249 249 249;
-  --md-surface-dim: 218 218 218;
-  --md-surface-bright: 249 249 249;
-  --md-surface-container: 238 238 238;
-  --md-surface-container-low: 243 243 243;
-  --md-surface-container-high: 232 232 232;
-  --md-surface-container-highest: 226 226 226;
-  --md-surface-container-lowest: 255 255 255;
-  --md-surface-variant: 218 226 238;
-  --md-outline: 113 119 130;
-  --md-outline-variant: 193 199 210;
-  --md-error: 186 26 26;
-  --md-error-container: 255 218 214;
-  --md-on-surface: 26 28 28;
-  --md-on-surface-variant: 65 71 81;
-  --md-on-primary: 255 255 255;
-  --md-on-primary-container: 253 252 255;
-  --md-on-secondary: 255 255 255;
-  --md-on-tertiary: 255 255 255;
-  --md-on-primary-fixed: 0 28 55;
-  --md-on-primary-fixed-variant: 0 73 126;
-  --md-on-secondary-fixed: 1 29 54;
-  --md-on-secondary-fixed-variant: 49 72 100;
-  --md-on-tertiary-fixed: 39 25 0;
-  --md-on-tertiary-fixed-variant: 95 65 0;
-  --md-on-error: 255 255 255;
-  --md-on-error-container: 147 0 10;
-  --md-inverse-surface: 47 49 49;
-  --md-inverse-on-surface: 241 241 241;
-  --md-inverse-primary: 160 202 255;
+@layer base {
+  :root {
+    /* === MD3 color tokens (original, kept for gradual migration) === */
+    --md-primary: 0 94 161;
+    --md-primary-container: 43 120 191;
+    --md-primary-fixed: 210 228 255;
+    --md-primary-fixed-dim: 160 202 255;
+    --md-secondary: 73 96 125;
+    --md-secondary-container: 196 220 254;
+    --md-tertiary: 123 85 0;
+    --md-tertiary-container: 154 108 0;
+    --md-surface: 249 249 249;
+    --md-surface-dim: 218 218 218;
+    --md-surface-bright: 249 249 249;
+    --md-surface-container: 238 238 238;
+    --md-surface-container-low: 243 243 243;
+    --md-surface-container-high: 232 232 232;
+    --md-surface-container-highest: 226 226 226;
+    --md-surface-container-lowest: 255 255 255;
+    --md-surface-variant: 218 226 238;
+    --md-outline: 113 119 130;
+    --md-outline-variant: 193 199 210;
+    --md-error: 186 26 26;
+    --md-error-container: 255 218 214;
+    --md-on-surface: 26 28 28;
+    --md-on-surface-variant: 65 71 81;
+    --md-on-primary: 255 255 255;
+    --md-on-primary-container: 253 252 255;
+    --md-on-secondary: 255 255 255;
+    --md-on-tertiary: 255 255 255;
+    --md-on-primary-fixed: 0 28 55;
+    --md-on-primary-fixed-variant: 0 73 126;
+    --md-on-secondary-fixed: 1 29 54;
+    --md-on-secondary-fixed-variant: 49 72 100;
+    --md-on-tertiary-fixed: 39 25 0;
+    --md-on-tertiary-fixed-variant: 95 65 0;
+    --md-on-error: 255 255 255;
+    --md-on-error-container: 147 0 10;
+    --md-inverse-surface: 47 49 49;
+    --md-inverse-on-surface: 241 241 241;
+    --md-inverse-primary: 160 202 255;
+
+    /* === shadcn/ui semantic tokens (mapped from MD3) === */
+    --background: 249 249 249;
+    --foreground: 26 28 28;
+    --card: 255 255 255;
+    --card-foreground: 26 28 28;
+    --popover: 255 255 255;
+    --popover-foreground: 26 28 28;
+    --primary: 0 94 161;
+    --primary-foreground: 255 255 255;
+    --secondary: 196 220 254;
+    --secondary-foreground: 26 28 28;
+    --muted: 238 238 238;
+    --muted-foreground: 65 71 81;
+    --accent: 232 232 232;
+    --accent-foreground: 26 28 28;
+    --destructive: 186 26 26;
+    --destructive-foreground: 255 255 255;
+    --border: 193 199 210;
+    --input: 193 199 210;
+    --ring: 0 94 161;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* === MD3 dark tokens (original) === */
+    --md-primary: 160 202 255;
+    --md-primary-container: 0 73 126;
+    --md-primary-fixed: 210 228 255;
+    --md-primary-fixed-dim: 160 202 255;
+    --md-secondary: 184 200 220;
+    --md-secondary-container: 58 76 96;
+    --md-tertiary: 229 191 61;
+    --md-tertiary-container: 95 65 0;
+    --md-surface: 17 19 24;
+    --md-surface-dim: 17 19 24;
+    --md-surface-bright: 55 57 62;
+    --md-surface-container: 30 32 36;
+    --md-surface-container-low: 26 28 32;
+    --md-surface-container-high: 40 42 46;
+    --md-surface-container-highest: 51 53 56;
+    --md-surface-container-lowest: 12 14 19;
+    --md-surface-variant: 65 72 80;
+    --md-outline: 139 145 156;
+    --md-outline-variant: 65 72 80;
+    --md-error: 255 180 171;
+    --md-error-container: 147 0 10;
+    --md-on-surface: 226 226 230;
+    --md-on-surface-variant: 193 199 210;
+    --md-on-primary: 0 50 88;
+    --md-on-primary-container: 210 228 255;
+    --md-on-secondary: 35 53 72;
+    --md-on-tertiary: 59 40 0;
+    --md-on-primary-fixed: 0 28 55;
+    --md-on-primary-fixed-variant: 0 73 126;
+    --md-on-secondary-fixed: 1 29 54;
+    --md-on-secondary-fixed-variant: 49 72 100;
+    --md-on-tertiary-fixed: 39 25 0;
+    --md-on-tertiary-fixed-variant: 95 65 0;
+    --md-on-error: 105 0 5;
+    --md-on-error-container: 255 218 214;
+    --md-inverse-surface: 226 226 230;
+    --md-inverse-on-surface: 47 49 49;
+    --md-inverse-primary: 0 94 161;
+
+    /* === shadcn/ui dark tokens === */
+    --background: 17 19 24;
+    --foreground: 226 226 230;
+    --card: 12 14 19;
+    --card-foreground: 226 226 230;
+    --popover: 12 14 19;
+    --popover-foreground: 226 226 230;
+    --primary: 160 202 255;
+    --primary-foreground: 0 50 88;
+    --secondary: 58 76 96;
+    --secondary-foreground: 226 226 230;
+    --muted: 30 32 36;
+    --muted-foreground: 193 199 210;
+    --accent: 40 42 46;
+    --accent-foreground: 226 226 230;
+    --destructive: 255 180 171;
+    --destructive-foreground: 105 0 5;
+    --border: 65 72 80;
+    --input: 65 72 80;
+    --ring: 160 202 255;
+  }
 }
 
-/* Material Design 3 Dark Theme */
-.dark {
-  --md-primary: 160 202 255;
-  --md-primary-container: 0 73 126;
-  --md-primary-fixed: 210 228 255;
-  --md-primary-fixed-dim: 160 202 255;
-  --md-secondary: 184 200 220;
-  --md-secondary-container: 58 76 96;
-  --md-tertiary: 229 191 61;
-  --md-tertiary-container: 95 65 0;
-  --md-surface: 17 19 24;
-  --md-surface-dim: 17 19 24;
-  --md-surface-bright: 55 57 62;
-  --md-surface-container: 30 32 36;
-  --md-surface-container-low: 26 28 32;
-  --md-surface-container-high: 40 42 46;
-  --md-surface-container-highest: 51 53 56;
-  --md-surface-container-lowest: 12 14 19;
-  --md-surface-variant: 65 72 80;
-  --md-outline: 139 145 156;
-  --md-outline-variant: 65 72 80;
-  --md-error: 255 180 171;
-  --md-error-container: 147 0 10;
-  --md-on-surface: 226 226 230;
-  --md-on-surface-variant: 193 199 210;
-  --md-on-primary: 0 50 88;
-  --md-on-primary-container: 210 228 255;
-  --md-on-secondary: 35 53 72;
-  --md-on-tertiary: 59 40 0;
-  --md-on-primary-fixed: 0 28 55;
-  --md-on-primary-fixed-variant: 0 73 126;
-  --md-on-secondary-fixed: 1 29 54;
-  --md-on-secondary-fixed-variant: 49 72 100;
-  --md-on-tertiary-fixed: 39 25 0;
-  --md-on-tertiary-fixed-variant: 95 65 0;
-  --md-on-error: 105 0 5;
-  --md-on-error-container: 255 218 214;
-  --md-inverse-surface: 226 226 230;
-  --md-inverse-on-surface: 47 49 49;
-  --md-inverse-primary: 0 94 161;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 /* Custom scrollbar styles */
@@ -146,19 +200,3 @@
   }
 }
 
-/* Material Symbols font */
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-smoothing: antialiased;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-}

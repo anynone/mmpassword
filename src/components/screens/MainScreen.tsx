@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
-import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { confirm } from "@tauri-apps/plugin-dialog";
-import { useVaultStore } from "../../stores/vaultStore";
-import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout";
-import { GroupDialog } from "../group";
-import { SettingsModal } from "../settings";
-import { useToast } from "../common/Toast";
-import { useTranslation } from "../../i18n";
-import type { Entry, Group } from "../../types";
+import { useState, useEffect } from "react"
+import { writeText } from "@tauri-apps/plugin-clipboard-manager"
+import { confirm } from "@tauri-apps/plugin-dialog"
+import { FolderOpen } from "lucide-react"
+import { useVaultStore } from "../../stores/vaultStore"
+import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout"
+import { GroupDialog } from "../group"
+import { SettingsModal } from "../settings"
+import { useToast } from "../common/Toast"
+import { useTranslation } from "../../i18n"
+import type { Entry, Group } from "../../types"
 
 interface MainScreenProps {
   onLock: () => void;
@@ -124,10 +125,10 @@ export function MainScreen({ onLock }: MainScreenProps) {
       <TopNavBar onLock={handleLock} onSettings={handleSettings} />
 
       {/* Vault Tab Bar */}
-      <div className="flex items-center bg-surface-container-low px-4 border-b border-surface-variant/20 h-10 shrink-0">
-        <div className="flex items-center bg-surface-container-lowest px-4 h-full border-t-2 border-primary rounded-t-lg shadow-sm">
-          <span className="material-symbols-outlined text-sm mr-2 text-primary">folder_open</span>
-          <span className="text-xs font-semibold text-on-surface">
+      <div className="flex items-center bg-muted/50 px-4 border-b border-border/30 h-10 shrink-0">
+        <div className="flex items-center bg-card px-4 h-full border-t-2 border-primary rounded-t-lg shadow-sm">
+          <FolderOpen className="h-3.5 w-3.5 mr-2 text-primary" />
+          <span className="text-xs font-semibold">
             {vault?.name || "Vault"}.mmp
           </span>
         </div>

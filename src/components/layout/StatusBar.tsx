@@ -1,31 +1,10 @@
-import { useTranslation } from "../../i18n";
+import { AppFooter } from "./AppFooter"
 
 interface StatusBarProps {
-  status?: "secure" | "unlocked" | "locked";
-  version?: string;
+  status?: "secure" | "unlocked" | "locked"
+  version?: string
 }
 
-export function StatusBar({
-  status = "secure",
-  version = "0.1.0",
-}: StatusBarProps) {
-  const { t } = useTranslation();
-
-  const statusConfig = {
-    secure: { text: t("statusBar.secure"), color: "text-emerald-600 dark:text-emerald-400", icon: "verified_user" },
-    unlocked: { text: t("statusBar.unlocked"), color: "text-amber-600 dark:text-amber-400", icon: "lock_open" },
-    locked: { text: t("statusBar.locked"), color: "text-on-surface-variant", icon: "lock" },
-  };
-
-  const { text, color, icon } = statusConfig[status];
-
-  return (
-    <footer className="flex justify-between items-center px-4 h-8 bg-surface-container-low border-t border-surface-variant/20 text-xs">
-      <div className="flex items-center gap-2">
-        <span className={`material-symbols-outlined text-sm ${color}`}>{icon}</span>
-        <span className={`font-bold ${color}`}>{text}</span>
-      </div>
-      <div className="text-on-surface-variant">v{version}</div>
-    </footer>
-  );
+export function StatusBar({ status = "secure", version = "0.1.0" }: StatusBarProps) {
+  return <AppFooter status={status} version={version} />
 }
