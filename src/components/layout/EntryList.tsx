@@ -29,7 +29,7 @@ export function EntryList({
   onDeleteEntry,
   isSubscriptionEntry: isSubscriptionEntryProp,
 }: EntryListProps) {
-  const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry, isSubscriptionEntry: isSubscriptionEntryStore, renameEntry } = useVaultStore()
+  const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry, isSubscriptionEntry: isSubscriptionEntryStore, renameEntry, updateFormData, editingState } = useVaultStore()
   const { showToast } = useToast()
   const { t } = useTranslation()
 
@@ -37,6 +37,9 @@ export function EntryList({
   const [renamingEntryId, setRenamingEntryId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState("")
   const renameInputRef = useRef<HTMLInputElement>(null)
+  const newEntryInputRef = useRef<HTMLInputElement>(null)
+  const [newEntryTitle, setNewEntryTitle] = useState("New Entry")
+  const [isEditingNewTitle, setIsEditingNewTitle] = useState(false)
   const [confirmState, setConfirmState] = useState<{
     isOpen: boolean
     pendingAction: () => void
@@ -85,7 +88,11 @@ export function EntryList({
         return
       }
     }
-    guardAndNavigate(() => startCreating(currentGroupId || undefined))
+    guardAndNavigate(() => {
+      startCreating(currentGroupId || undefined)
+      setNewEntryTitle("New Entry")
+      setIsEditingNewTitle(true)
+    })
   }
 
   const handleCopyUsername = async (entry: Entry) => {
@@ -150,6 +157,20 @@ export function EntryList({
     }
   }, [renamingEntryId])
 
+  useEffect(() => {
+    if (isEditingNewTitle && newEntryInputRef.current) {
+      newEntryInputRef.current.focus()
+      newEntryInputRef.current.select()
+    }
+  }, [isEditingNewTitle])
+
+  const handleFinishNewTitle = () => {
+    setIsEditingNewTitle(false)
+    const title = newEntryTitle.trim() || "New Entry"
+    setNewEntryTitle(title)
+    updateFormData({ title })
+  }
+
   const getEntryIcon = (entry: Entry) => {
     const url = entry.fields.find((f) => f.name === "url")?.value?.toLowerCase() || ""
     const title = entry.title.toLowerCase()
@@ -205,7 +226,30 @@ export function EntryList({
               <Plus className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium italic text-primary">{t("entryList.newEntry")}</p>
+              {isEditingNewTitle ? (
+                <input
+                  ref={newEntryInputRef}
+                  value={newEntryTitle}
+                  onChange={(e) => setNewEntryTitle(e.target.value)}
+                  onBlur={handleFinishNewTitle}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleFinishNewTitle()
+                    if (e.key === "Escape") handleFinishNewTitle()
+                  }}
+                  className="text-sm font-medium bg-background border border-primary/40 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-primary/40 w-full"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <p
+                  className="text-sm font-medium text-primary cursor-text"
+                  onDoubleClick={() => {
+                    setNewEntryTitle(editingState.mode === "creating" ? editingState.currentData.title : "New Entry")
+                    setIsEditingNewTitle(true)
+                  }}
+                >
+                  {editingState.mode === "creating" ? editingState.currentData.title : t("entryList.newEntry")}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground italic">{t("entryList.editing")}</p>
             </div>
           </button>
@@ -232,6 +276,11 @@ export function EntryList({
                   <button
                     onClick={() => handleSelectEntry(entry.id)}
                     onDoubleClick={() => { if (!isSub) handleStartRename(entry, isSub) }}
+                    draggable={!isSub}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("application/entry-id", entry.id)
+                      e.dataTransfer.effectAllowed = "move"
+                    }}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150 border-b border-border/30",
                       selectedEntryId === entry.id
