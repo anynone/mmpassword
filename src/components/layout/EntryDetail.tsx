@@ -200,11 +200,6 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
     )
   }
 
-  // Determine display title
-  const displayTitle = isCreating
-    ? t("entryDetail.newEntry")
-    : entry?.title ?? ""
-
   return (
     <div className="flex-1 bg-background flex flex-col">
       {/* Header */}
@@ -213,14 +208,12 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
           <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
             {isCreating ? (
               <Plus className="h-5 w-5 text-primary" />
-            ) : isEditing ? (
-              <Pencil className="h-5 w-5 text-primary" />
             ) : (
               <Key className="h-5 w-5 text-primary" />
             )}
           </div>
           <div>
-            <h2 className="font-headline font-bold text-lg">{displayTitle}</h2>
+            <h2 className="font-headline font-bold text-lg">{isCreating ? t("entryDetail.newEntry") : entry?.title ?? ""}</h2>
             {!isCreating && entry?.groupId && (
               <p className="text-xs text-muted-foreground">{t("entryDetail.inGroup")}</p>
             )}
@@ -333,23 +326,6 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
 
         {/* Fields section */}
         <div className="space-y-4">
-          {isActive && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
-                Fields
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={addField}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                {t("entryDetail.addField")}
-              </Button>
-            </div>
-          )}
-
           {displayFields.map((field, index) => (
             <InlineField
               key={field.id}
@@ -361,6 +337,19 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
               onGeneratePassword={() => generatePassword(index)}
             />
           ))}
+
+          {isActive && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={addField}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {t("entryDetail.addField")}
+            </Button>
+          )}
         </div>
 
         {/* Metadata */}
