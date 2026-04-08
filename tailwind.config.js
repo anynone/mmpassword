@@ -8,17 +8,47 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Material Design 3 颜色系统 - 通过 CSS 变量支持 light/dark
+        // === shadcn/ui semantic colors ===
+        border: 'rgb(var(--border) / <alpha-value>)',
+        input: 'rgb(var(--input) / <alpha-value>)',
+        ring: 'rgb(var(--ring) / <alpha-value>)',
+        background: 'rgb(var(--background) / <alpha-value>)',
+        foreground: 'rgb(var(--foreground) / <alpha-value>)',
         primary: {
-          DEFAULT: 'rgb(var(--md-primary) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
+          foreground: 'rgb(var(--primary-foreground) / <alpha-value>)',
+          // MD3 extended tokens
           container: 'rgb(var(--md-primary-container) / <alpha-value>)',
           fixed: 'rgb(var(--md-primary-fixed) / <alpha-value>)',
           'fixed-dim': 'rgb(var(--md-primary-fixed-dim) / <alpha-value>)',
         },
         secondary: {
-          DEFAULT: 'rgb(var(--md-secondary) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--secondary) / <alpha-value>)',
+          foreground: 'rgb(var(--secondary-foreground) / <alpha-value>)',
           container: 'rgb(var(--md-secondary-container) / <alpha-value>)',
         },
+        destructive: {
+          DEFAULT: 'rgb(var(--destructive) / <alpha-value>)',
+          foreground: 'rgb(var(--destructive-foreground) / <alpha-value>)',
+        },
+        muted: {
+          DEFAULT: 'rgb(var(--muted) / <alpha-value>)',
+          foreground: 'rgb(var(--muted-foreground) / <alpha-value>)',
+        },
+        accent: {
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          foreground: 'rgb(var(--accent-foreground) / <alpha-value>)',
+        },
+        popover: {
+          DEFAULT: 'rgb(var(--popover) / <alpha-value>)',
+          foreground: 'rgb(var(--popover-foreground) / <alpha-value>)',
+        },
+        card: {
+          DEFAULT: 'rgb(var(--card) / <alpha-value>)',
+          foreground: 'rgb(var(--card-foreground) / <alpha-value>)',
+        },
+
+        // === MD3 tokens (kept for gradual migration) ===
         tertiary: {
           DEFAULT: 'rgb(var(--md-tertiary) / <alpha-value>)',
           container: 'rgb(var(--md-tertiary-container) / <alpha-value>)',
@@ -66,16 +96,28 @@ export default {
         label: ['Inter', 'sans-serif'],
       },
       borderRadius: {
-        DEFAULT: '0.25rem',
-        lg: '0.5rem',
-        xl: '0.75rem',
-        '2xl': '1rem',
-        '3xl': '1.5rem',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
       boxShadow: {
         'ambient': '0px 12px 32px rgba(0, 28, 55, 0.06)',
       },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 }
