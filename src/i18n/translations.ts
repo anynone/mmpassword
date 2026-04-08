@@ -55,6 +55,8 @@ export const translations: Record<string, Record<string, string>> = {
     "entryList.copyPassword": "Copy Password",
     "entryList.usernameCopied": "Username copied to clipboard",
     "entryList.passwordCopied": "Password copied to clipboard",
+    "entryList.rename": "Rename",
+    "entryList.renamed": "Entry renamed",
 
     // EntryDetail
     "entryDetail.newEntry": "New Entry",
@@ -71,6 +73,7 @@ export const translations: Record<string, Record<string, string>> = {
     "entryDetail.created": "Created",
     "entryDetail.lastModified": "Last Modified",
     "entryDetail.copiedToClipboard": "{field} copied to clipboard",
+    "entryDetail.addField": "Add Field",
 
     // StatusBar
     "statusBar.secure": "Status: Secure",
@@ -245,6 +248,8 @@ export const translations: Record<string, Record<string, string>> = {
     "entryList.copyPassword": "复制密码",
     "entryList.usernameCopied": "用户名已复制到剪贴板",
     "entryList.passwordCopied": "密码已复制到剪贴板",
+    "entryList.rename": "重命名",
+    "entryList.renamed": "条目已重命名",
 
     // EntryDetail
     "entryDetail.newEntry": "新建条目",
@@ -261,6 +266,7 @@ export const translations: Record<string, Record<string, string>> = {
     "entryDetail.created": "创建时间",
     "entryDetail.lastModified": "最后修改",
     "entryDetail.copiedToClipboard": "{field} 已复制到剪贴板",
+    "entryDetail.addField": "添加字段",
 
     // StatusBar
     "statusBar.secure": "状态：安全",

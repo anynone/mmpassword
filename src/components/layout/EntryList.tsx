@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
-import { Search, Plus, Key, Lock, Copy, Pencil, Trash2, Code, Mail, Tag, Users, Landmark, ShoppingCart, SearchX } from "lucide-react"
+import { Search, Plus, Key, Lock, Copy, Pencil, Trash2, Code, Mail, Tag, Users, Landmark, ShoppingCart, SearchX, Type } from "lucide-react"
 import type { Entry } from "../../types"
 import { useVaultStore } from "../../stores/vaultStore"
 import { Button } from "@/components/ui/button"
@@ -29,11 +29,14 @@ export function EntryList({
   onDeleteEntry,
   isSubscriptionEntry: isSubscriptionEntryProp,
 }: EntryListProps) {
-  const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry, isSubscriptionEntry: isSubscriptionEntryStore } = useVaultStore()
+  const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry, isSubscriptionEntry: isSubscriptionEntryStore, renameEntry } = useVaultStore()
   const { showToast } = useToast()
   const { t } = useTranslation()
 
   const [searchQuery, setSearchQuery] = useState("")
+  const [renamingEntryId, setRenamingEntryId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+  const renameInputRef = useRef<HTMLInputElement>(null)
   const [confirmState, setConfirmState] = useState<{
     isOpen: boolean
     pendingAction: () => void
@@ -116,6 +119,36 @@ export function EntryList({
       onDeleteEntry(entry)
     }
   }
+
+  const handleStartRename = (entry: Entry, isSub: boolean) => {
+    if (isSub) {
+      showToast("info", t("subscription.cannotModify"))
+      return
+    }
+    setRenamingEntryId(entry.id)
+    setRenameValue(entry.title)
+  }
+
+  const handleFinishRename = async () => {
+    if (!renamingEntryId || !renameValue.trim()) {
+      setRenamingEntryId(null)
+      return
+    }
+    try {
+      await renameEntry(renamingEntryId, renameValue.trim())
+      showToast("success", t("entryDetail.entryUpdated"))
+    } catch (error) {
+      showToast("error", String(error))
+    }
+    setRenamingEntryId(null)
+  }
+
+  useEffect(() => {
+    if (renamingEntryId && renameInputRef.current) {
+      renameInputRef.current.focus()
+      renameInputRef.current.select()
+    }
+  }, [renamingEntryId])
 
   const getEntryIcon = (entry: Entry) => {
     const url = entry.fields.find((f) => f.name === "url")?.value?.toLowerCase() || ""
@@ -216,7 +249,22 @@ export function EntryList({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-medium truncate">{entry.title}</p>
+                        {renamingEntryId === entry.id ? (
+                          <input
+                            ref={renameInputRef}
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onBlur={handleFinishRename}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleFinishRename()
+                              if (e.key === "Escape") setRenamingEntryId(null)
+                            }}
+                            className="text-sm font-medium bg-background border border-primary/40 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-primary/40 w-full"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <p className="text-sm font-medium truncate">{entry.title}</p>
+                        )}
                         {isSub && (
                           <Lock className="h-3 w-3 text-muted-foreground" />
                         )}
@@ -241,6 +289,12 @@ export function EntryList({
                     <Pencil className="h-4 w-4 mr-3" />
                     {t("sideNav.edit")}
                   </ContextMenuItem>
+                  {!isSub && (
+                    <ContextMenuItem onClick={() => handleStartRename(entry, isSub)}>
+                      <Type className="h-4 w-4 mr-3" />
+                      {t("entryList.rename")}
+                    </ContextMenuItem>
+                  )}
                   <ContextMenuItem
                     onClick={() => handleDelete(entry, isSub)}
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"

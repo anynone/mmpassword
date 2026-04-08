@@ -82,6 +82,7 @@ interface VaultState {
   getEntries: () => Promise<Entry[]>;
   createEntry: (request: CreateEntryRequest) => Promise<Entry>;
   updateEntry: (id: string, request: UpdateEntryRequest) => Promise<Entry>;
+  renameEntry: (id: string, newTitle: string) => Promise<Entry>;
   deleteEntry: (id: string) => Promise<void>;
 
   // Group operations
@@ -240,6 +241,24 @@ export const useVaultStore = create<VaultState>((set) => ({
     const entry = await invoke<Entry>("update_entry", { id, request });
     set((state) => ({
       entries: state.entries.map((e) => (e.id === id ? entry : e)),
+    }));
+    return entry;
+  },
+
+  renameEntry: async (id, newTitle) => {
+    const state = useVaultStore.getState() as VaultState;
+    const existing = state.entries.find((e) => e.id === id);
+    if (!existing) throw new Error("Entry not found");
+    const request: UpdateEntryRequest = {
+      title: newTitle,
+      groupId: existing.groupId,
+      fields: existing.fields,
+      tags: existing.tags,
+      favorite: existing.favorite,
+    };
+    const entry = await invoke<Entry>("update_entry", { id, request });
+    set((s) => ({
+      entries: s.entries.map((e) => (e.id === id ? entry : e)),
     }));
     return entry;
   },

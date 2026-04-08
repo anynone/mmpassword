@@ -1,16 +1,29 @@
 import { useState } from "react"
-import { Plus, Pencil, Key, Lock, Copy, Eye, MousePointerClick } from "lucide-react"
+import { Plus, Pencil, Key, Lock, MousePointerClick } from "lucide-react"
 import type { Entry } from "../../types"
-import type { Field } from "../../types"
-import { useVaultStore } from "../../stores/vaultStore"
+import type { FieldType } from "../../types"
+import { useVaultStore, type FieldInput } from "../../stores/vaultStore"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { ConfirmDialog } from "../common/ConfirmDialog"
-import { EntryFormFields } from "../entry/EntryFormFields"
+import { InlineField } from "../entry/InlineField"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
-import { cn } from "@/lib/utils"
+
+const entryTypeOptions = [
+  { value: "websiteLogin", label: "Website Login" },
+  { value: "secureNote", label: "Secure Note" },
+]
 
 interface EntryDetailProps {
   entry: Entry | null
@@ -27,6 +40,7 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
     createEntry,
     updateEntry,
     isSubscriptionEntry,
+    groups,
   } = useVaultStore()
 
   const { showToast } = useToast()
@@ -41,6 +55,18 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
   const isActive = isEditing || isCreating
   const formData = isActive ? editingState.currentData : null
 
+  // Build field list from either formData (edit/create) or entry (view)
+  const displayFields: FieldInput[] = isActive && formData
+    ? formData.fields
+    : entry
+      ? entry.fields.map((f, i) => ({
+          id: `view-${i}`,
+          name: f.name,
+          value: f.value,
+          fieldType: f.fieldType || ("text" as FieldType),
+        }))
+      : []
+
   const handleSaveEdit = async () => {
     if (!formData || editingState.mode !== "editing") return
     setIsSubmitting(true)
@@ -49,7 +75,7 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
         showToast("error", t("entryDetail.titleRequired"))
         return
       }
-      const entryFields: Field[] = formData.fields
+      const entryFields = formData.fields
         .filter((f) => f.name.trim() && f.value.trim())
         .map((f) => ({
           name: f.name.trim(),
@@ -81,7 +107,7 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
         showToast("error", t("entryDetail.titleRequired"))
         return
       }
-      const entryFields: Field[] = formData.fields
+      const entryFields = formData.fields
         .filter((f) => f.name.trim() && f.value.trim())
         .map((f) => ({
           name: f.name.trim(),
@@ -131,58 +157,37 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
     setPendingAction(null)
   }
 
-  const formatFieldName = (name: string) => {
-    return name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " ")
-  }
-
-  const maskPassword = (value: string) => {
-    return "\u2022".repeat(value.length)
-  }
-
-  // Creating mode
-  if (isCreating && formData) {
-    return (
-      <div className="flex-1 bg-background flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Plus className="h-5 w-5 text-primary" />
-            </div>
-            <h2 className="font-headline font-bold text-lg">
-              {t("entryDetail.newEntry")}
-            </h2>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          <EntryFormFields
-            data={formData}
-            onChange={updateFormData}
-            showEntryType={true}
-            isSubmitting={isSubmitting}
-          />
-        </div>
-        <div className="flex-shrink-0 px-6 py-4 bg-muted/30 border-t border-border/30 flex justify-end gap-3">
-          <Button variant="ghost" onClick={handleCancel} disabled={isSubmitting}>
-            {t("entryDetail.cancel")}
-          </Button>
-          <Button onClick={handleSave} disabled={isSubmitting || !formData.title.trim()}>
-            {t("entryDetail.createEntry")}
-          </Button>
-        </div>
-        <ConfirmDialog
-          isOpen={confirmOpen}
-          title={t("confirm.unsavedNewEntry")}
-          message={t("confirm.unsavedNewEntryMessage")}
-          onDiscard={handleConfirmDiscard}
-          onSave={handleConfirmSave}
-          onCancel={handleConfirmCancel}
-        />
-      </div>
+  const updateField = (index: number, key: keyof FieldInput, value: string) => {
+    if (!formData) return
+    const newFields = formData.fields.map((f, i) =>
+      i === index ? { ...f, [key]: value } : f
     )
+    updateFormData({ fields: newFields })
   }
 
-  // No entry selected
-  if (!entry) {
+  const addField = () => {
+    if (!formData) return
+    updateFormData({
+      fields: [...formData.fields, { id: crypto.randomUUID(), name: "", value: "", fieldType: "text" as FieldType }],
+    })
+  }
+
+  const removeField = (index: number) => {
+    if (!formData) return
+    updateFormData({ fields: formData.fields.filter((_, i) => i !== index) })
+  }
+
+  const generatePassword = (index: number) => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?"
+    let password = ""
+    for (let i = 0; i < 16; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    updateField(index, "value", password)
+  }
+
+  // No entry selected and not creating
+  if (!entry && !isCreating) {
     return (
       <div className="flex-1 bg-background flex items-center justify-center">
         <div className="text-center">
@@ -195,138 +200,195 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
     )
   }
 
-  // Editing mode
-  if (isEditing && formData) {
-    return (
-      <div className="flex-1 bg-background flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-              <Pencil className="h-5 w-5 text-primary" />
-            </div>
-            <h2 className="font-headline font-bold text-lg">
-              {t("entryDetail.editEntry")}
-            </h2>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          <EntryFormFields
-            data={formData}
-            onChange={updateFormData}
-            showEntryType={false}
-            isSubmitting={isSubmitting}
-          />
-        </div>
-        <div className="flex-shrink-0 px-6 py-4 bg-muted/30 border-t border-border/30 flex justify-end gap-3">
-          <Button variant="ghost" onClick={handleCancel} disabled={isSubmitting}>
-            {t("entryDetail.cancel")}
-          </Button>
-          <Button onClick={handleSave} disabled={isSubmitting || !formData.title.trim()}>
-            {t("entryDetail.saveChanges")}
-          </Button>
-        </div>
-        <ConfirmDialog
-          isOpen={confirmOpen}
-          title={t("confirm.unsavedChanges")}
-          message={t("confirm.unsavedChangesMessage")}
-          onDiscard={handleConfirmDiscard}
-          onSave={handleConfirmSave}
-          onCancel={handleConfirmCancel}
-        />
-      </div>
-    )
-  }
+  // Determine display title
+  const displayTitle = isCreating
+    ? t("entryDetail.newEntry")
+    : entry?.title ?? ""
 
-  // Viewing mode
   return (
     <div className="flex-1 bg-background flex flex-col">
-      <div className="flex items-center justify-between px-6 py-4 border-b">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/30">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-            <Key className="h-5 w-5 text-primary" />
+            {isCreating ? (
+              <Plus className="h-5 w-5 text-primary" />
+            ) : isEditing ? (
+              <Pencil className="h-5 w-5 text-primary" />
+            ) : (
+              <Key className="h-5 w-5 text-primary" />
+            )}
           </div>
           <div>
-            <h2 className="font-headline font-bold text-lg">{entry.title}</h2>
-            {entry.groupId && (
+            <h2 className="font-headline font-bold text-lg">{displayTitle}</h2>
+            {!isCreating && entry?.groupId && (
               <p className="text-xs text-muted-foreground">{t("entryDetail.inGroup")}</p>
             )}
           </div>
         </div>
-        {!isSubscription && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => startEditing(entry)}
-          >
-            <Pencil className="h-4 w-4 mr-2" />
-            {t("entryDetail.editEntry")}
-          </Button>
-        )}
-        {isSubscription && (
-          <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-secondary/30 text-secondary-foreground text-xs font-medium">
-            <Lock className="h-3 w-3" />
-            {t("subscription.readOnly")}
-          </span>
-        )}
-      </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            {entry.fields.map((field, index) => (
-              <div key={index} className="space-y-1">
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
-                  {formatFieldName(field.name)}
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-accent rounded-lg px-4 py-3">
-                    <p className={cn("text-sm break-all", field.fieldType === "password" && "font-mono tracking-wider")}>
-                      {field.fieldType === "password"
-                        ? maskPassword(field.value)
-                        : field.value || "-"}
-                    </p>
-                  </div>
-                  {field.value && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => onCopyField(field.name, field.value)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      {field.fieldType === "password" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => {}}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Separator className="my-8" />
-
-        <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-          <div>
-            <span className="block font-semibold mb-1">{t("entryDetail.created")}</span>
-            <span>{new Date(entry.createdAt).toLocaleString()}</span>
-          </div>
-          <div>
-            <span className="block font-semibold mb-1">{t("entryDetail.lastModified")}</span>
-            <span>{new Date(entry.updatedAt).toLocaleString()}</span>
-          </div>
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          {isActive ? (
+            <>
+              <Button variant="ghost" onClick={handleCancel} disabled={isSubmitting}>
+                {t("entryDetail.cancel")}
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isSubmitting || (formData ? !formData.title.trim() : true)}
+              >
+                {isCreating ? t("entryDetail.createEntry") : t("entryDetail.saveChanges")}
+              </Button>
+            </>
+          ) : (
+            <>
+              {!isSubscription && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => entry && startEditing(entry)}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  {t("entryDetail.editEntry")}
+                </Button>
+              )}
+              {isSubscription && (
+                <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-secondary/30 text-secondary-foreground text-xs font-medium">
+                  <Lock className="h-3 w-3" />
+                  {t("subscription.readOnly")}
+                </span>
+              )}
+            </>
+          )}
         </div>
       </div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+        {/* Creating mode: show title, entryType, group, favorite */}
+        {isCreating && formData && (
+          <div className="space-y-4 mb-6">
+            <div className="space-y-2">
+              <Label htmlFor="entry-title">Title</Label>
+              <Input
+                id="entry-title"
+                value={formData.title}
+                onChange={(e) => updateFormData({ title: e.target.value })}
+                placeholder="e.g., Gmail Account"
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Entry Type</Label>
+              <Select
+                value={formData.entryType}
+                onValueChange={(value) => updateFormData({ entryType: value as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {entryTypeOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Group</Label>
+              <Select
+                value={formData.groupId || "__none__"}
+                onValueChange={(value) => updateFormData({ groupId: value === "__none__" ? "" : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No group (root)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No group (root)</SelectItem>
+                  {groups.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="entry-favorite"
+                checked={formData.favorite}
+                onCheckedChange={(checked) => updateFormData({ favorite: checked === true })}
+              />
+              <Label htmlFor="entry-favorite" className="cursor-pointer text-sm font-normal">
+                Mark as favorite
+              </Label>
+            </div>
+
+            <Separator />
+          </div>
+        )}
+
+        {/* Fields section */}
+        <div className="space-y-4">
+          {isActive && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+                Fields
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={addField}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                {t("entryDetail.addField")}
+              </Button>
+            </div>
+          )}
+
+          {displayFields.map((field, index) => (
+            <InlineField
+              key={field.id}
+              field={field}
+              isEditing={isActive}
+              onChange={(key, value) => updateField(index, key, value)}
+              onRemove={() => removeField(index)}
+              onCopy={onCopyField}
+              onGeneratePassword={() => generatePassword(index)}
+            />
+          ))}
+        </div>
+
+        {/* Metadata */}
+        {entry && !isCreating && (
+          <>
+            <Separator className="my-8" />
+            <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+              <div>
+                <span className="block font-semibold mb-1">{t("entryDetail.created")}</span>
+                <span>{new Date(entry.createdAt).toLocaleString()}</span>
+              </div>
+              <div>
+                <span className="block font-semibold mb-1">{t("entryDetail.lastModified")}</span>
+                <span>{new Date(entry.updatedAt).toLocaleString()}</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        title={isCreating ? t("confirm.unsavedNewEntry") : t("confirm.unsavedChanges")}
+        message={isCreating ? t("confirm.unsavedNewEntryMessage") : t("confirm.unsavedChangesMessage")}
+        onDiscard={handleConfirmDiscard}
+        onSave={handleConfirmSave}
+        onCancel={handleConfirmCancel}
+      />
     </div>
   )
 }
