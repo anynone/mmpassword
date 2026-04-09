@@ -71,6 +71,9 @@ interface VaultState {
   selectedEntryId: string | null;
   selectedGroupId: string | null;
   searchQuery: string;
+  /** Number of in-flight background sync operations. UI treats >0 as "syncing". */
+  pendingSyncCount: number;
+  syncError: string | null;
 
   // Vault operations
   createVault: (name: string, password: string, path: string) => Promise<void>;
@@ -122,6 +125,12 @@ interface VaultState {
   setSearchQuery: (query: string) => void;
   clearError: () => void;
 
+  // Sync state
+  notifySyncStarted: () => void;
+  notifySyncCompleted: () => void;
+  notifySyncFailed: (message: string) => void;
+  clearSyncError: () => void;
+
   // Editing state
   editingState: EditingState;
   virtualEntry: VirtualEntry | null;
@@ -146,6 +155,8 @@ export const useVaultStore = create<VaultState>((set) => ({
   selectedEntryId: null,
   selectedGroupId: null,
   searchQuery: "",
+  pendingSyncCount: 0,
+  syncError: null,
 
   // Vault operations
   createVault: async (name, password, path) => {
@@ -205,6 +216,10 @@ export const useVaultStore = create<VaultState>((set) => ({
         subscriptionEntries: [],
         subscriptionGroups: [],
         subscriptionSource: null,
+        // Reset sync state - any in-flight background sync becomes
+        // irrelevant once the vault is locked.
+        pendingSyncCount: 0,
+        syncError: null,
       });
     } catch (error) {
       set({ error: String(error) });
@@ -265,17 +280,13 @@ export const useVaultStore = create<VaultState>((set) => ({
   },
 
   moveEntryToGroup: async (id, groupId) => {
-    const state = useVaultStore.getState() as VaultState;
-    const existing = state.entries.find((e) => e.id === id);
-    if (!existing) throw new Error("Entry not found");
-    const request: UpdateEntryRequest = {
-      title: existing.title,
-      groupId: groupId ?? undefined,
-      fields: existing.fields,
-      tags: existing.tags,
-      favorite: existing.favorite,
-    };
-    const entry = await invoke<Entry>("update_entry", { id, request });
+    // The backend command persists to memory synchronously and pushes the
+    // git commit in the background, so the UI gets the updated entry back
+    // immediately. Background sync status is delivered via Tauri events.
+    const entry = await invoke<Entry>("move_entry_to_group", {
+      id,
+      groupId: groupId ?? null,
+    });
     set((s) => ({
       entries: s.entries.map((e) => (e.id === id ? entry : e)),
     }));
@@ -497,6 +508,20 @@ export const useVaultStore = create<VaultState>((set) => ({
   selectGroup: (id) => set({ selectedGroupId: id }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   clearError: () => set({ error: null }),
+
+  // Sync state
+  notifySyncStarted: () =>
+    set((s) => ({ pendingSyncCount: s.pendingSyncCount + 1 })),
+  notifySyncCompleted: () =>
+    set((s) => ({
+      pendingSyncCount: Math.max(0, s.pendingSyncCount - 1),
+    })),
+  notifySyncFailed: (message) =>
+    set((s) => ({
+      pendingSyncCount: Math.max(0, s.pendingSyncCount - 1),
+      syncError: message,
+    })),
+  clearSyncError: () => set({ syncError: null }),
 
   // Editing state
   editingState: { mode: "viewing" },

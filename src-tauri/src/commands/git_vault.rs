@@ -98,11 +98,20 @@ pub async fn open_git_vault(
     {
         let mut config = state.config.write().await;
         let git_meta = crate::models::GitRepoMeta::new(
+            repo_url.clone(),
+            branch.clone(),
+            key_path.clone(),
+        );
+        let repo_name = git_meta.repo_name.clone();
+        config.add_recent_git_repo(git_meta);
+        // Remember this as the last-opened vault so auto-open on startup works.
+        config.set_last_git_vault(crate::storage::LastGitVault {
             repo_url,
             branch,
+            vault_path,
             key_path,
-        );
-        config.add_recent_git_repo(git_meta);
+            repo_name,
+        });
         let _ = config.save();
     }
 
@@ -167,11 +176,20 @@ pub async fn create_git_vault(
     {
         let mut config = state.config.write().await;
         let git_meta = crate::models::GitRepoMeta::new(
+            repo_url.clone(),
+            branch.clone(),
+            key_path.clone(),
+        );
+        let repo_name = git_meta.repo_name.clone();
+        config.add_recent_git_repo(git_meta);
+        // Remember this as the last-opened vault so auto-open on startup works.
+        config.set_last_git_vault(crate::storage::LastGitVault {
             repo_url,
             branch,
+            vault_path,
             key_path,
-        );
-        config.add_recent_git_repo(git_meta);
+            repo_name,
+        });
         let _ = config.save();
     }
 

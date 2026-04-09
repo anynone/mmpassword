@@ -4,30 +4,44 @@ import { useVaultStore } from "../../stores/vaultStore"
 import { AppHeader, AppFooter } from "../layout"
 import { Button } from "@/components/ui/button"
 import { useTranslation } from "../../i18n"
+import type { LastGitVault } from "../../types"
+
+/** Discriminated union describing which vault the unlock screen should open. */
+export type PendingVault =
+  | { type: "local"; path: string }
+  | { type: "git"; vault: LastGitVault }
 
 interface UnlockScreenProps {
-  vaultPath: string
+  pending: PendingVault
   onUnlock: () => void
   onBack: () => void
 }
 
-export function UnlockScreen({ vaultPath, onUnlock, onBack }: UnlockScreenProps) {
+export function UnlockScreen({ pending, onUnlock, onBack }: UnlockScreenProps) {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { unlockVault } = useVaultStore()
+  const { unlockVault, openGitVault } = useVaultStore()
   const { t } = useTranslation()
 
-  const vaultName = vaultPath.split("/").pop()?.replace(".mmp", "") || "Vault"
+  const vaultName =
+    pending.type === "git"
+      ? pending.vault.repoName
+      : pending.path.split("/").pop()?.replace(".mmp", "") || "Vault"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsSubmitting(true)
     try {
-      await unlockVault(vaultPath, password)
+      if (pending.type === "git") {
+        const { repoUrl, branch, vaultPath, keyPath } = pending.vault
+        await openGitVault(repoUrl, branch, vaultPath, keyPath, password)
+      } else {
+        await unlockVault(pending.path, password)
+      }
       onUnlock()
     } catch (err) {
       setError(t("unlock.invalidPassword"))

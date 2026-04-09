@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { confirm } from "@tauri-apps/plugin-dialog"
+import { listen } from "@tauri-apps/api/event"
 import { FolderOpen } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
 import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout"
@@ -36,6 +37,9 @@ export function MainScreen({ onLock }: MainScreenProps) {
     isSubscriptionEntry,
   } = useVaultStore();
 
+  const pendingSyncCount = useVaultStore((s) => s.pendingSyncCount);
+  const syncError = useVaultStore((s) => s.syncError);
+
   const { showToast } = useToast();
   const { t } = useTranslation();
 
@@ -43,6 +47,35 @@ export function MainScreen({ onLock }: MainScreenProps) {
   useEffect(() => {
     loadData();
   }, [vault]);
+
+  // Listen to backend sync events so we can surface "syncing" status in the
+  // footer while background git commit+push work runs.
+  useEffect(() => {
+    const unlistenPromises = [
+      listen("sync:started", () => {
+        useVaultStore.getState().notifySyncStarted();
+      }),
+      listen<string>("sync:failed", (event) => {
+        useVaultStore.getState().notifySyncFailed(event.payload);
+      }),
+      listen("sync:completed", () => {
+        useVaultStore.getState().notifySyncCompleted();
+      }),
+    ];
+    return () => {
+      unlistenPromises.forEach((p) => {
+        p.then((unlisten) => unlisten()).catch(() => {});
+      });
+    };
+  }, []);
+
+  // Show a toast if a background sync fails so the user is informed.
+  useEffect(() => {
+    if (syncError) {
+      showToast("error", t("sync.failed", { error: syncError }));
+      useVaultStore.getState().clearSyncError();
+    }
+  }, [syncError, showToast, t]);
 
   const loadData = async () => {
     await Promise.all([getEntries(), getGroups()]);
@@ -164,7 +197,7 @@ export function MainScreen({ onLock }: MainScreenProps) {
       </div>
 
       {/* Footer */}
-      <StatusBar status="unlocked" version="0.1.0" />
+      <StatusBar status="unlocked" version="0.1.0" isSyncing={pendingSyncCount > 0} />
 
       {/* Group Dialog (still uses modal) */}
       <GroupDialog

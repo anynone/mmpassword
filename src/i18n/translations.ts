@@ -81,6 +81,10 @@ export const translations: Record<string, Record<string, string>> = {
     "statusBar.unlocked": "Status: Unlocked",
     "statusBar.locked": "Status: Locked",
 
+    // Sync
+    "sync.syncing": "Syncing...",
+    "sync.failed": "Sync failed: {error}",
+
     // WelcomeScreen
     "welcome.title": "Welcome Back",
     "welcome.subtitle": "Your encrypted local sanctuary is ready.",
@@ -274,6 +278,10 @@ export const translations: Record<string, Record<string, string>> = {
     "statusBar.secure": "状态：安全",
     "statusBar.unlocked": "状态：已解锁",
     "statusBar.locked": "状态：已锁定",
+
+    // Sync
+    "sync.syncing": "正在同步...",
+    "sync.failed": "同步失败：{error}",
 
     // WelcomeScreen
     "welcome.title": "欢迎回来",

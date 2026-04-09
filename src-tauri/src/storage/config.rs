@@ -7,6 +7,19 @@ use serde::{Deserialize, Serialize};
 use crate::error::{AppError, Result};
 use crate::models::{GitRepoMeta, SubscriptionMeta, VaultMeta};
 
+/// Last opened Git vault reference. Contains enough information to
+/// reopen the vault on next startup (still requires the master password).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LastGitVault {
+    pub repo_url: String,
+    pub branch: String,
+    pub vault_path: String,
+    pub key_path: String,
+    /// Display name extracted from vault_path or repo_url.
+    pub repo_name: String,
+}
+
 /// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,8 +36,11 @@ pub struct AppConfig {
     pub open_last_vault: bool,
     /// Recent vaults list
     pub recent_vaults: Vec<VaultMeta>,
-    /// Last opened vault path
+    /// Last opened local vault path
     pub last_vault_path: Option<String>,
+    /// Last opened Git vault reference
+    #[serde(default)]
+    pub last_git_vault: Option<LastGitVault>,
     /// Recent Git repositories
     pub recent_git_repos: Vec<GitRepoMeta>,
     /// Subscription URL history
@@ -77,6 +93,7 @@ impl Default for AppConfig {
             open_last_vault: true,
             recent_vaults: Vec::new(),
             last_vault_path: None,
+            last_git_vault: None,
             recent_git_repos: Vec::new(),
             subscription_history: Vec::new(),
             window_state: WindowState::default(),
@@ -132,14 +149,28 @@ impl AppConfig {
         self.recent_vaults.retain(|v| v.path != path);
     }
 
-    /// Update last vault path
+    /// Update last vault path (local). Clears any stored Git vault reference
+    /// so `last_vault_path` and `last_git_vault` remain mutually exclusive.
     pub fn set_last_vault(&mut self, path: impl Into<String>) {
         self.last_vault_path = Some(path.into());
+        self.last_git_vault = None;
     }
 
     /// Clear last vault path
     pub fn clear_last_vault(&mut self) {
         self.last_vault_path = None;
+    }
+
+    /// Update last opened Git vault. Clears any stored local vault path
+    /// so `last_vault_path` and `last_git_vault` remain mutually exclusive.
+    pub fn set_last_git_vault(&mut self, vault: LastGitVault) {
+        self.last_git_vault = Some(vault);
+        self.last_vault_path = None;
+    }
+
+    /// Clear last Git vault reference
+    pub fn clear_last_git_vault(&mut self) {
+        self.last_git_vault = None;
     }
 
     /// Add a Git repository to recent list
