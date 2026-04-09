@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import type { Theme, AppConfig } from "../types";
+import type { Theme, AppConfig, LastGitVault } from "../types";
 
 interface SettingsState {
   theme: Theme;
@@ -9,6 +9,7 @@ interface SettingsState {
   clipboardClearSeconds: number;
   openLastVault: boolean;
   lastVaultPath: string | null;
+  lastGitVault: LastGitVault | null;
 
   // Internal: preserve fields not managed by this store
   _appConfig: AppConfig | null;
@@ -31,6 +32,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   clipboardClearSeconds: 30,
   openLastVault: true,
   lastVaultPath: null,
+  lastGitVault: null,
   _appConfig: null,
 
   // Actions
@@ -44,6 +46,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         clipboardClearSeconds: config.clipboardClearSeconds,
         openLastVault: config.openLastVault,
         lastVaultPath: config.lastVaultPath ?? null,
+        lastGitVault: config.lastGitVault ?? null,
         _appConfig: config,
       });
     } catch (error) {
@@ -88,6 +91,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         openLastVault: state.openLastVault,
         recentVaults: existing?.recentVaults ?? [],
         lastVaultPath: existing?.lastVaultPath,
+        lastGitVault: existing?.lastGitVault,
         recentGitRepos: existing?.recentGitRepos ?? [],
         subscriptionHistory: existing?.subscriptionHistory ?? [],
         windowState: existing?.windowState ?? {

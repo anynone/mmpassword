@@ -59,6 +59,7 @@ pub fn run() {
             commands::entry::get_entry,
             commands::entry::create_entry,
             commands::entry::update_entry,
+            commands::entry::move_entry_to_group,
             commands::entry::delete_entry,
             commands::entry::get_trash_entries,
             commands::entry::restore_entry,

@@ -4,6 +4,15 @@ import type { SubscriptionMeta } from "./subscription";
 
 export type { VaultMeta };
 
+export interface LastGitVault {
+  repoUrl: string;
+  branch: string;
+  vaultPath: string;
+  keyPath: string;
+  /** Display name extracted from vault_path or repo_url. */
+  repoName: string;
+}
+
 export interface AppConfig {
   theme: Theme;
   language: string;
@@ -12,6 +21,7 @@ export interface AppConfig {
   openLastVault: boolean;
   recentVaults: VaultMeta[];
   lastVaultPath?: string;
+  lastGitVault?: LastGitVault;
   recentGitRepos: GitRepoMeta[];
   subscriptionHistory: SubscriptionMeta[];
   windowState: WindowState;

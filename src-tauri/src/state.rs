@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use parking_lot::RwLock;
-use tokio::sync::RwLock as AsyncRwLock;
+use tokio::sync::{Mutex as AsyncMutex, RwLock as AsyncRwLock};
 use zeroize::ZeroizeOnDrop;
 
 use crate::models::Vault;
@@ -60,6 +60,8 @@ pub struct AppState {
     pub subscription_vault: RwLock<Option<Vault>>,
     /// Application configuration
     pub config: AsyncRwLock<AppConfig>,
+    /// Lock to serialize background git sync operations
+    pub git_sync_lock: Arc<AsyncMutex<()>>,
 }
 
 impl AppState {
@@ -69,6 +71,7 @@ impl AppState {
             session: RwLock::new(None),
             subscription_vault: RwLock::new(None),
             config: AsyncRwLock::new(config),
+            git_sync_lock: Arc::new(AsyncMutex::new(())),
         }
     }
 

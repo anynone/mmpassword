@@ -1,14 +1,16 @@
 import { useTranslation } from "../../i18n"
-import { ShieldCheck, LockOpen, Lock } from "lucide-react"
+import { ShieldCheck, LockOpen, Lock, RefreshCw } from "lucide-react"
 
 interface AppFooterProps {
   status?: "secure" | "unlocked" | "locked"
   version?: string
+  isSyncing?: boolean
 }
 
 export function AppFooter({
   status = "secure",
   version = "0.1.0",
+  isSyncing = false,
 }: AppFooterProps) {
   const { t } = useTranslation()
 
@@ -38,7 +40,18 @@ export function AppFooter({
         <Icon className={`h-3.5 w-3.5 ${color}`} />
         <span className={`font-bold ${color}`}>{text}</span>
       </div>
-      <div className="text-muted-foreground">v{version}</div>
+      <div className="flex items-center gap-3 text-muted-foreground">
+        {isSyncing && (
+          <div
+            className="flex items-center gap-1.5 text-sky-600 dark:text-sky-400"
+            title={t("sync.syncing")}
+          >
+            <RefreshCw className="h-3 w-3 animate-spin" />
+            <span className="font-medium">{t("sync.syncing")}</span>
+          </div>
+        )}
+        <span>v{version}</span>
+      </div>
     </footer>
   )
 }

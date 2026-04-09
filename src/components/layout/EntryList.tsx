@@ -185,7 +185,7 @@ export function EntryList({
   }
 
   return (
-    <div className="w-72 bg-muted/20 flex flex-col border-r border-border/30">
+    <div className="w-72 shrink-0 bg-muted/20 flex flex-col border-r border-border/30">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-border/30">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">

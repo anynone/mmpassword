@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useVaultStore } from "./stores/vaultStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { WelcomeScreen } from "./components/screens/WelcomeScreen";
-import { UnlockScreen } from "./components/screens/UnlockScreen";
+import { UnlockScreen, type PendingVault } from "./components/screens/UnlockScreen";
 import { MainScreen } from "./components/screens/MainScreen";
 import { NewVaultScreen } from "./components/screens/NewVaultScreen";
 import { ThemeProvider, ToastProvider } from "./components/common";
@@ -40,11 +40,11 @@ function LoadingOverlay({ loading }: { loading: LoadingState }) {
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>("welcome");
-  const [pendingVaultPath, setPendingVaultPath] = useState<string | null>(null);
+  const [pendingVault, setPendingVault] = useState<PendingVault | null>(null);
   const [loading, setLoading] = useState<LoadingState>({ isLoading: false, message: "" });
 
   const { vault, isUnlocked, openGitVault, createGitVault } = useVaultStore();
-  const { loadSettings, openLastVault, lastVaultPath } = useSettingsStore();
+  const { loadSettings, openLastVault, lastVaultPath, lastGitVault } = useSettingsStore();
   const { t } = useTranslation();
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
@@ -53,11 +53,16 @@ function App() {
     loadSettings().then(() => setSettingsLoaded(true));
   }, [loadSettings]);
 
-  // Auto-open last vault on startup
+  // Auto-open last vault on startup (local or Git)
   useEffect(() => {
     if (!settingsLoaded) return;
-    if (openLastVault && lastVaultPath && currentScreen === "welcome") {
-      setPendingVaultPath(lastVaultPath);
+    if (!openLastVault || currentScreen !== "welcome") return;
+
+    if (lastVaultPath) {
+      setPendingVault({ type: "local", path: lastVaultPath });
+      setCurrentScreen("unlock");
+    } else if (lastGitVault) {
+      setPendingVault({ type: "git", vault: lastGitVault });
       setCurrentScreen("unlock");
     }
   }, [settingsLoaded]);
@@ -70,7 +75,7 @@ function App() {
   }, [isUnlocked, vault]);
 
   const handleOpenVault = (path: string) => {
-    setPendingVaultPath(path);
+    setPendingVault({ type: "local", path });
     setCurrentScreen("unlock");
   };
 
@@ -88,12 +93,12 @@ function App() {
 
   const handleLock = () => {
     setCurrentScreen("welcome");
-    setPendingVaultPath(null);
+    setPendingVault(null);
   };
 
   const handleBack = () => {
     setCurrentScreen("welcome");
-    setPendingVaultPath(null);
+    setPendingVault(null);
   };
 
   // Handle opening a vault from Git repository
@@ -158,9 +163,9 @@ function App() {
             />
           )}
 
-          {currentScreen === "unlock" && pendingVaultPath && (
+          {currentScreen === "unlock" && pendingVault && (
             <UnlockScreen
-              vaultPath={pendingVaultPath}
+              pending={pendingVault}
               onUnlock={handleUnlockSuccess}
               onBack={handleBack}
             />

@@ -173,7 +173,7 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
   // No entry selected and not creating
   if (!entry && !isCreating) {
     return (
-      <div className="flex-1 bg-background flex items-center justify-center">
+      <div className="flex-1 min-w-0 bg-background flex items-center justify-center">
         <div className="text-center">
           <MousePointerClick className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">
@@ -185,27 +185,27 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
   }
 
   return (
-    <div className="flex-1 bg-background flex flex-col">
+    <div className="flex-1 min-w-0 bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/30">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/30 gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
             {isCreating ? (
               <Plus className="h-5 w-5 text-primary" />
             ) : (
               <Key className="h-5 w-5 text-primary" />
             )}
           </div>
-          <div>
-            <h2 className="font-headline font-bold text-lg">{isCreating ? (formData?.title || t("entryDetail.newEntry")) : entry?.title ?? ""}</h2>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-headline font-bold text-lg truncate">{isCreating ? (formData?.title || t("entryDetail.newEntry")) : entry?.title ?? ""}</h2>
             {!isCreating && entry?.groupId && (
-              <p className="text-xs text-muted-foreground">{t("entryDetail.inGroup")}</p>
+              <p className="text-xs text-muted-foreground truncate">{t("entryDetail.inGroup")}</p>
             )}
           </div>
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {isActive ? (
             <>
               <Button variant="ghost" onClick={handleCancel} disabled={isSubmitting}>
