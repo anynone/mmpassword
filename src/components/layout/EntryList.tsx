@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
-import { Search, Plus, Key, Lock, Copy, Pencil, Trash2, Code, Mail, Tag, Users, Landmark, ShoppingCart, SearchX, Type } from "lucide-react"
+import { Search, Plus, Key, Copy, Pencil, Trash2, Code, Mail, Tag, Users, Landmark, ShoppingCart, SearchX, Type } from "lucide-react"
 import type { Entry } from "../../types"
 import { useVaultStore } from "../../stores/vaultStore"
 import { Button } from "@/components/ui/button"
@@ -20,16 +20,14 @@ interface EntryListProps {
   entries: Entry[]
   selectedEntryId: string | null
   onDeleteEntry: (entry: Entry) => void
-  isSubscriptionEntry?: (entryId: string) => boolean
 }
 
 export function EntryList({
   entries,
   selectedEntryId,
   onDeleteEntry,
-  isSubscriptionEntry: isSubscriptionEntryProp,
 }: EntryListProps) {
-  const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry, isSubscriptionEntry: isSubscriptionEntryStore, renameEntry, updateFormData, editingState } = useVaultStore()
+  const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry, renameEntry, updateFormData, editingState } = useVaultStore()
   const { showToast } = useToast()
   const { t } = useTranslation()
 
@@ -81,13 +79,6 @@ export function EntryList({
 
   const handleCreateEntry = () => {
     const currentGroupId = useVaultStore.getState().selectedGroupId
-    if (currentGroupId) {
-      const subscriptionGroupIds = useVaultStore.getState().subscriptionGroups.map(g => g.id)
-      if (subscriptionGroupIds.includes(currentGroupId)) {
-        showToast("info", t("subscription.cannotModify"))
-        return
-      }
-    }
     guardAndNavigate(() => {
       startCreating(currentGroupId || undefined)
       setNewEntryTitle("New Entry")
@@ -111,27 +102,15 @@ export function EntryList({
     }
   }
 
-  const handleEdit = (entry: Entry, isSub: boolean) => {
-    if (isSub) {
-      showToast("info", t("subscription.cannotModify"))
-    } else {
-      guardAndNavigate(() => startEditing(entry))
-    }
+  const handleEdit = (entry: Entry) => {
+    guardAndNavigate(() => startEditing(entry))
   }
 
-  const handleDelete = (entry: Entry, isSub: boolean) => {
-    if (isSub) {
-      showToast("info", t("subscription.cannotModify"))
-    } else {
-      onDeleteEntry(entry)
-    }
+  const handleDelete = (entry: Entry) => {
+    onDeleteEntry(entry)
   }
 
-  const handleStartRename = (entry: Entry, isSub: boolean) => {
-    if (isSub) {
-      showToast("info", t("subscription.cannotModify"))
-      return
-    }
+  const handleStartRename = (entry: Entry) => {
     setRenamingEntryId(entry.id)
     setRenameValue(entry.title)
   }
@@ -268,15 +247,14 @@ export function EntryList({
           </div>
         ) : (
           filteredEntries.map((entry) => {
-            const isSub = isSubscriptionEntryProp ? isSubscriptionEntryProp(entry.id) : isSubscriptionEntryStore(entry.id)
             const EntryIcon = getEntryIcon(entry)
             return (
               <ContextMenu key={entry.id}>
                 <ContextMenuTrigger asChild>
                   <button
                     onClick={() => handleSelectEntry(entry.id)}
-                    onDoubleClick={() => { if (!isSub) handleStartRename(entry, isSub) }}
-                    draggable={!isSub}
+                    onDoubleClick={() => handleStartRename(entry)}
+                    draggable={true}
                     onDragStart={(e) => {
                       e.dataTransfer.setData("application/entry-id", entry.id)
                       e.dataTransfer.effectAllowed = "move"
@@ -285,14 +263,13 @@ export function EntryList({
                       "w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150 border-b border-border/30",
                       selectedEntryId === entry.id
                         ? "bg-primary/10 text-primary"
-                        : "hover:bg-accent",
-                      isSub && "opacity-80"
+                        : "hover:bg-accent"
                     )}
                   >
                     <div
                       className={cn(
                         "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                        selectedEntryId === entry.id ? "bg-primary/20" : isSub ? "bg-secondary/30" : "bg-accent"
+                        selectedEntryId === entry.id ? "bg-primary/20" : "bg-accent"
                       )}
                     >
                       <EntryIcon className="h-4 w-4" />
@@ -315,9 +292,6 @@ export function EntryList({
                         ) : (
                           <p className="text-sm font-medium truncate">{entry.title}</p>
                         )}
-                        {isSub && (
-                          <Lock className="h-3 w-3 text-muted-foreground" />
-                        )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
                         {entry.fields.find((f) => f.name === "username")?.value || t("entryList.noUsername")}
@@ -335,18 +309,16 @@ export function EntryList({
                     {t("entryList.copyPassword")}
                   </ContextMenuItem>
                   <ContextMenuSeparator />
-                  <ContextMenuItem onClick={() => handleEdit(entry, isSub)}>
+                  <ContextMenuItem onClick={() => handleEdit(entry)}>
                     <Pencil className="h-4 w-4 mr-3" />
                     {t("sideNav.edit")}
                   </ContextMenuItem>
-                  {!isSub && (
-                    <ContextMenuItem onClick={() => handleStartRename(entry, isSub)}>
-                      <Type className="h-4 w-4 mr-3" />
-                      {t("entryList.rename")}
-                    </ContextMenuItem>
-                  )}
+                  <ContextMenuItem onClick={() => handleStartRename(entry)}>
+                    <Type className="h-4 w-4 mr-3" />
+                    {t("entryList.rename")}
+                  </ContextMenuItem>
                   <ContextMenuItem
-                    onClick={() => handleDelete(entry, isSub)}
+                    onClick={() => handleDelete(entry)}
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4 mr-3" />

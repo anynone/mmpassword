@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { LayoutGrid, Folder, Rss, Lock, Plus, Pencil, Trash2 } from "lucide-react"
+import { LayoutGrid, Folder, Plus, Pencil, Trash2 } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,8 +20,6 @@ interface SideNavBarProps {
   onCreateGroup: () => void
   onEditGroup: (group: Group) => void
   onDeleteGroup: (group: Group) => void
-  subscriptionGroups?: Group[]
-  subscriptionSource?: string | null
 }
 
 export function SideNavBar({
@@ -30,8 +28,6 @@ export function SideNavBar({
   onCreateGroup,
   onEditGroup,
   onDeleteGroup,
-  subscriptionGroups = [],
-  subscriptionSource: _subscriptionSource,
 }: SideNavBarProps) {
   const groups = useVaultStore((s) => s.groups)
   const isEditingActive = useVaultStore((s) => s.isEditingActive)
@@ -178,33 +174,6 @@ export function SideNavBar({
             </ContextMenuContent>
           </ContextMenu>
         ))}
-
-        {subscriptionGroups.length > 0 && (
-          <>
-            <div className="flex items-center gap-2 px-4 py-2 mt-3 mb-1">
-              <Rss className="h-3 w-3 text-muted-foreground" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {t("subscription.subscriptionGroup")}
-              </span>
-            </div>
-            {subscriptionGroups.map((group) => (
-              <button
-                key={`sub-${group.id}`}
-                onClick={() => handleSelectGroup(group.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-2 text-left transition-all duration-150",
-                  selectedGroupId === group.id
-                    ? "bg-secondary/30 text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-accent"
-                )}
-              >
-                <Folder className="h-5 w-5" />
-                <span className="text-sm font-medium truncate">{group.name}</span>
-                <Lock className="h-3 w-3 text-muted-foreground ml-auto" />
-              </button>
-            ))}
-          </>
-        )}
       </nav>
 
       <ConfirmDialog

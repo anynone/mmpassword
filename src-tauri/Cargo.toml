@@ -55,14 +55,8 @@ env_logger = "0.11"
 # Secure token storage
 keyring = "2"
 
-# HTTP client
-reqwest = { version = "0.12", features = ["default-tls"] }
-
 # Hash utilities
 sha2 = "0.10"
-
-# Base64 encoding/decoding
-base64 = "0.22"
 
 [dev-dependencies]
 tempfile = "3"

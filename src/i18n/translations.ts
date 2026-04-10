@@ -182,21 +182,6 @@ export const translations: Record<string, Record<string, string>> = {
     "app.openingGitVaultDesc": "Cloning repository and decrypting...",
     "app.creatingGitVault": "Creating Vault in Git Repository",
     "app.creatingGitVaultDesc": "Initializing repository and encrypting vault...",
-
-    // Subscription
-    "subscription.title": "Subscribe to Vault",
-    "subscription.urlLabel": "Subscription URL",
-    "subscription.urlPlaceholder": "https://example.com/sub/...",
-    "subscription.fetch": "Fetch",
-    "subscription.fetching": "Fetching...",
-    "subscription.fetchSuccess": "Subscription vault fetched successfully",
-    "subscription.history": "Subscription History",
-    "subscription.noHistory": "No subscription history yet.",
-    "subscription.entryCount": "{count} entries",
-    "subscription.readOnly": "Read-only",
-    "subscription.cannotModify": "Subscription entries cannot be modified",
-    "subscription.subscriptionGroup": "Subscription Group",
-    "subscription.source": "From subscription",
   },
 
   "zh-CN": {
@@ -380,20 +365,5 @@ export const translations: Record<string, Record<string, string>> = {
     "app.openingGitVaultDesc": "正在克隆仓库并解密...",
     "app.creatingGitVault": "正在 Git 仓库中创建密码库",
     "app.creatingGitVaultDesc": "正在初始化仓库并加密密码库...",
-
-    // Subscription
-    "subscription.title": "订阅密码库",
-    "subscription.urlLabel": "订阅地址",
-    "subscription.urlPlaceholder": "输入订阅 URL...",
-    "subscription.fetch": "拉取",
-    "subscription.fetching": "拉取中...",
-    "subscription.fetchSuccess": "订阅密码库拉取成功",
-    "subscription.history": "订阅历史",
-    "subscription.noHistory": "暂无订阅历史。",
-    "subscription.entryCount": "{count} 个条目",
-    "subscription.readOnly": "只读",
-    "subscription.cannotModify": "订阅信息无法修改",
-    "subscription.subscriptionGroup": "订阅分组",
-    "subscription.source": "来自订阅",
   },
 };

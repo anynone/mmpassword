@@ -3,4 +3,3 @@ export * from "./entry";
 export * from "./group";
 export * from "./common";
 export * from "./git";
-export * from "./subscription";

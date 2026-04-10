@@ -93,7 +93,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         lastVaultPath: existing?.lastVaultPath,
         lastGitVault: existing?.lastGitVault,
         recentGitRepos: existing?.recentGitRepos ?? [],
-        subscriptionHistory: existing?.subscriptionHistory ?? [],
         windowState: existing?.windowState ?? {
           width: 1200,
           height: 800,

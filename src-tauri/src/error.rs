@@ -62,9 +62,6 @@ pub enum AppError {
     #[error("Sync error: {0}")]
     SyncError(String),
 
-    #[error("Network error: {0}")]
-    NetworkError(String),
-
     #[error("Keyring error: {0}")]
     KeyringError(String),
 

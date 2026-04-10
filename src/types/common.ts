@@ -1,6 +1,5 @@
 import type { VaultMeta } from "./vault";
 import type { GitRepoMeta } from "./git";
-import type { SubscriptionMeta } from "./subscription";
 
 export type { VaultMeta };
 
@@ -23,7 +22,6 @@ export interface AppConfig {
   lastVaultPath?: string;
   lastGitVault?: LastGitVault;
   recentGitRepos: GitRepoMeta[];
-  subscriptionHistory: SubscriptionMeta[];
   windowState: WindowState;
 }
 
