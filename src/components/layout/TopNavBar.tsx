@@ -14,7 +14,6 @@ interface TopNavBarProps {
 export function TopNavBar({ onLock, onSettings }: TopNavBarProps) {
   const vault = useVaultStore((state) => state.vault)
   const isUnlocked = useVaultStore((state) => state.isUnlocked)
-  const subscriptionSource = useVaultStore((state) => state.subscriptionSource)
   const isEditingActive = useVaultStore((state) => state.isEditingActive)
   const cancelEditing = useVaultStore((state) => state.cancelEditing)
   const saveCurrentEditing = useVaultStore((state) => state.saveCurrentEditing)
@@ -62,7 +61,7 @@ export function TopNavBar({ onLock, onSettings }: TopNavBarProps) {
             {vault.name}
           </span>
         )}
-        {(isUnlocked || subscriptionSource) && (
+        {isUnlocked && (
           <Button
             variant="ghost"
             size="icon"

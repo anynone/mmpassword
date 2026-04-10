@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus, Pencil, Key, Lock, MousePointerClick } from "lucide-react"
+import { Plus, Pencil, Key, MousePointerClick } from "lucide-react"
 import type { Entry } from "../../types"
 import type { FieldType } from "../../types"
 import { useVaultStore, type FieldInput } from "../../stores/vaultStore"
@@ -13,10 +13,9 @@ import { useTranslation } from "../../i18n"
 interface EntryDetailProps {
   entry: Entry | null
   onCopyField: (fieldName: string, value: string) => void
-  isSubscription?: boolean
 }
 
-export function EntryDetail({ entry, onCopyField, isSubscription: isSubscriptionProp }: EntryDetailProps) {
+export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
   const {
     editingState,
     startEditing,
@@ -24,12 +23,10 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
     updateFormData,
     createEntry,
     updateEntry,
-    isSubscriptionEntry,
   } = useVaultStore()
 
   const { showToast } = useToast()
   const { t } = useTranslation()
-  const isSubscription = isSubscriptionProp ?? (entry ? isSubscriptionEntry(entry.id) : false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
@@ -219,24 +216,14 @@ export function EntryDetail({ entry, onCopyField, isSubscription: isSubscription
               </Button>
             </>
           ) : (
-            <>
-              {!isSubscription && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => entry && startEditing(entry)}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  {t("entryDetail.editEntry")}
-                </Button>
-              )}
-              {isSubscription && (
-                <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-secondary/30 text-secondary-foreground text-xs font-medium">
-                  <Lock className="h-3 w-3" />
-                  {t("subscription.readOnly")}
-                </span>
-              )}
-            </>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => entry && startEditing(entry)}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              {t("entryDetail.editEntry")}
+            </Button>
           )}
         </div>
       </div>

@@ -89,12 +89,6 @@ pub fn run() {
             commands::vault::get_recent_git_repos,
             commands::vault::add_recent_git_repo,
             commands::vault::remove_recent_git_repo,
-            // Subscription commands
-            commands::subscription::fetch_subscription_vault,
-            commands::subscription::get_subscription_vault,
-            commands::subscription::get_subscription_history,
-            commands::subscription::remove_subscription_history,
-            commands::subscription::clear_subscription,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

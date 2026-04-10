@@ -12,17 +12,6 @@ use crate::crypto::{derive_key, KdfParams};
 use crate::error::{AppError, Result};
 use crate::models::{Vault, VAULT_VERSION};
 
-/// Shared password for subscription vault decryption.
-/// In production, this should be injected via environment variable.
-const SUBSCRIPTION_SHARED_PASSWORD: &str = match option_env!("MMP_SUBSCRIPTION_PASSWORD") {
-    Some(p) => p,
-    None => "mmpassword-subscription-shared-key-2024",
-};
-
-/// Get the subscription shared password
-pub fn get_subscription_password() -> &'static str {
-    SUBSCRIPTION_SHARED_PASSWORD
-}
 const MMP_MAGIC: &[u8; 4] = b"MMP1";
 
 /// Header size in bytes
@@ -208,45 +197,6 @@ pub fn is_vault_file(path: &Path) -> bool {
         }
         _ => false,
     }
-}
-
-/// Decrypt a vault from raw .mmp binary data in memory (no filesystem access)
-pub fn decrypt_vault_from_bytes(data: &[u8], password: &str) -> Result<Vault> {
-    if data.len() < HEADER_SIZE + SALT_SIZE + NONCE_SIZE + TAG_SIZE {
-        return Err(AppError::InvalidFileFormat);
-    }
-
-    // Parse header
-    let header = VaultHeader::from_bytes(&data[0..HEADER_SIZE])?;
-
-    // Check version
-    if header.version as u32 > VAULT_VERSION {
-        return Err(AppError::VersionMismatch(VAULT_VERSION, header.version as u32));
-    }
-
-    // Extract salt
-    let mut salt = [0u8; SALT_SIZE];
-    salt.copy_from_slice(&data[HEADER_SIZE..HEADER_SIZE + SALT_SIZE]);
-
-    // Extract encrypted data
-    let encrypted_bytes = &data[HEADER_SIZE + SALT_SIZE..];
-
-    // Derive key from password
-    let derived_key = derive_key(password, &salt, &KdfParams::default())?;
-    let key = derived_key.into_array()?;
-
-    // Parse EncryptedData
-    let encrypted = EncryptedData::from_bytes(encrypted_bytes)?;
-
-    // Decrypt
-    let plaintext = decrypt(&encrypted, &key)?;
-    let json_str = String::from_utf8(plaintext)
-        .map_err(|e| AppError::Decryption(format!("Invalid UTF-8: {}", e)))?;
-
-    // Deserialize vault
-    let vault: Vault = serde_json::from_str(&json_str)?;
-
-    Ok(vault)
 }
 
 /// Get the default vault storage directory

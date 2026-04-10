@@ -31,10 +31,7 @@ export function MainScreen({ onLock }: MainScreenProps) {
     deleteGroup,
     lockVault,
     editingState,
-    subscriptionGroups,
-    subscriptionSource,
-    mergedEntries,
-    isSubscriptionEntry,
+    entries,
   } = useVaultStore();
 
   const pendingSyncCount = useVaultStore((s) => s.pendingSyncCount);
@@ -81,22 +78,14 @@ export function MainScreen({ onLock }: MainScreenProps) {
     await Promise.all([getEntries(), getGroups()]);
   };
 
-  // Use merged entries (local + subscription)
-  const allMergedEntries = mergedEntries();
-
   // Filter entries by selected group
   const filteredEntries = selectedGroupId
-    ? allMergedEntries.filter((e) => e.groupId === selectedGroupId)
-    : allMergedEntries;
+    ? entries.filter((e) => e.groupId === selectedGroupId)
+    : entries;
 
   // Handle lock
   const handleLock = async () => {
-    if (vault && useVaultStore.getState().isUnlocked) {
-      await lockVault();
-    } else {
-      // Subscription-only mode: just clear subscription data
-      useVaultStore.getState().clearSubscription();
-    }
+    await lockVault();
     onLock();
   };
 
@@ -150,7 +139,7 @@ export function MainScreen({ onLock }: MainScreenProps) {
   // Get selected entry (null if virtual entry is selected)
   const selectedEntry = editingState.mode === "creating"
     ? null
-    : allMergedEntries.find((e) => e.id === selectedEntryId);
+    : entries.find((e) => e.id === selectedEntryId);
 
   return (
     <div className="h-screen flex flex-col bg-surface">
@@ -176,8 +165,6 @@ export function MainScreen({ onLock }: MainScreenProps) {
           onCreateGroup={handleCreateGroup}
           onEditGroup={handleEditGroup}
           onDeleteGroup={handleDeleteGroup}
-          subscriptionGroups={subscriptionGroups}
-          subscriptionSource={subscriptionSource ?? null}
         />
 
         {/* Entry List */}
@@ -185,14 +172,12 @@ export function MainScreen({ onLock }: MainScreenProps) {
           entries={filteredEntries}
           selectedEntryId={selectedEntryId}
           onDeleteEntry={handleDeleteEntry}
-          isSubscriptionEntry={isSubscriptionEntry}
         />
 
         {/* Entry Detail */}
         <EntryDetail
           entry={selectedEntry || null}
           onCopyField={handleCopyFieldFromDetail}
-          isSubscription={selectedEntry ? isSubscriptionEntry(selectedEntry.id) : false}
         />
       </div>
 
