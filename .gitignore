@@ -48,3 +48,6 @@ src-tauri/testvalut/
 
 # Design files (private documentation)
 design/
+
+# Product requirements (private documentation)
+PRd/
