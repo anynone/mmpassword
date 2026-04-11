@@ -45,3 +45,6 @@ gen/schemas/
 # Test vault files
 test/*.mmp
 src-tauri/testvalut/
+
+# Design files (private documentation)
+design/
