@@ -89,6 +89,10 @@ pub fn run() {
             commands::vault::get_recent_git_repos,
             commands::vault::add_recent_git_repo,
             commands::vault::remove_recent_git_repo,
+            // TOTP commands
+            commands::totp::generate_totp,
+            commands::totp::set_totp_secret,
+            commands::totp::remove_totp_secret,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

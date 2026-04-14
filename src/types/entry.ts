@@ -20,6 +20,8 @@ export interface Entry {
   createdAt: string;
   updatedAt: string;
   icon?: string;
+  /** TOTP secret key (base32 encoded), undefined = no MFA */
+  totpSecret?: string;
 }
 
 export interface CreateEntryRequest {

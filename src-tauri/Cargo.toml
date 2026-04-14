@@ -58,6 +58,10 @@ keyring = "2"
 # Hash utilities
 sha2 = "0.10"
 
+# TOTP
+totp-rs = "5"
+url = "2"
+
 [dev-dependencies]
 tempfile = "3"
 

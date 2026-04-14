@@ -40,6 +40,10 @@ pub struct Entry {
     pub updated_at: DateTime<Utc>,
     /// Icon name or identifier
     pub icon: Option<String>,
+    /// TOTP secret key (base32 encoded)
+    /// None = MFA not configured
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub totp_secret: Option<String>,
 }
 
 impl Entry {
@@ -57,6 +61,7 @@ impl Entry {
             created_at: now,
             updated_at: now,
             icon: None,
+            totp_secret: None,
         }
     }
 

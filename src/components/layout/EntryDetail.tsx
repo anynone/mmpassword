@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ConfirmDialog } from "../common/ConfirmDialog"
 import { InlineField } from "../entry/InlineField"
+import { TotpCard } from "../entry/TotpCard"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
 
@@ -230,6 +231,22 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+        {/* TOTP Card - only in view mode */}
+        {!isActive && entry && (
+          <div className="mb-4">
+            <TotpCard
+              entry={entry}
+              onEntryUpdated={(updated) => {
+                useVaultStore.setState((state) => ({
+                  entries: state.entries.map((e) =>
+                    e.id === updated.id ? updated : e
+                  ),
+                }))
+              }}
+            />
+          </div>
+        )}
+
         {/* Fields section */}
         <div className="space-y-4">
           {displayFields.map((field, index) => (
