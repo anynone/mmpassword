@@ -17,6 +17,7 @@ export function AboutSettings() {
         <div className="text-center">
           <h4 className="text-xl font-headline font-bold">{t("app.name")}</h4>
           <p className="text-sm text-muted-foreground mt-1">v0.1.0</p>
+          <p className="text-sm text-muted-foreground mt-1">谷川信息系统-技术中台</p>
         </div>
 
         <p className="text-sm text-muted-foreground text-center max-w-sm">
