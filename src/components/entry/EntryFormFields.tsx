@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Plus, Trash2, KeyRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { PasswordStrengthIndicator } from "../common/PasswordStrengthIndicator"
+import { PasswordGeneratorPanel } from "./PasswordGeneratorPanel"
 import { useVaultStore, type EntryFormData, type FieldInput } from "../../stores/vaultStore"
 import type { FieldType, EntryType } from "../../types"
 
@@ -37,6 +39,7 @@ interface EntryFormFieldsProps {
 
 export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }: EntryFormFieldsProps) {
   const groups = useVaultStore((s) => s.groups)
+  const [generatorIndex, setGeneratorIndex] = useState<number | null>(null)
 
   const updateField = (index: number, key: keyof FieldInput, value: string) => {
     const newFields = data.fields.map((f, i) =>
@@ -51,15 +54,6 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
 
   const removeField = (index: number) => {
     onChange({ fields: data.fields.filter((_, i) => i !== index) })
-  }
-
-  const generatePassword = (index: number) => {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?"
-    let password = ""
-    for (let i = 0; i < 16; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    updateField(index, "value", password)
   }
 
   return (
@@ -178,15 +172,23 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
                   className={field.fieldType === "password" ? "pr-10" : ""}
                 />
                 {field.fieldType === "password" && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                    onClick={() => generatePassword(index)}
-                  >
-                    <KeyRound className="h-4 w-4" />
-                  </Button>
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      onClick={() => setGeneratorIndex(generatorIndex === index ? null : index)}
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </Button>
+                    {generatorIndex === index && (
+                      <PasswordGeneratorPanel
+                        onApply={(pwd) => updateField(index, "value", pwd)}
+                        onClose={() => setGeneratorIndex(null)}
+                      />
+                    )}
+                  </>
                 )}
               </div>
             </div>

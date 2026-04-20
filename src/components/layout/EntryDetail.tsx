@@ -159,15 +159,6 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
     updateFormData({ fields: formData.fields.filter((_, i) => i !== index) })
   }
 
-  const generatePassword = (index: number) => {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?"
-    let password = ""
-    for (let i = 0; i < 16; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    updateField(index, "value", password)
-  }
-
   // No entry selected and not creating
   if (!entry && !isCreating) {
     return (
@@ -257,7 +248,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
               onChange={(key, value) => updateField(index, key, value)}
               onRemove={() => removeField(index)}
               onCopy={onCopyField}
-              onGeneratePassword={() => generatePassword(index)}
+              onGeneratePassword={() => {}}
             />
           ))}
 

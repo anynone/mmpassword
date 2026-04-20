@@ -41,14 +41,12 @@ export interface PasswordOptions {
   lowercase: boolean;
   digits: boolean;
   symbols: boolean;
-  spaces: boolean;
 }
 
 export const DEFAULT_PASSWORD_OPTIONS: PasswordOptions = {
-  length: 20,
+  length: 16,
   uppercase: true,
   lowercase: true,
   digits: true,
-  symbols: true,
-  spaces: false,
+  symbols: false,
 };

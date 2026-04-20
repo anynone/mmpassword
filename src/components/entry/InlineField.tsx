@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { PasswordStrengthIndicator } from "../common/PasswordStrengthIndicator"
+import { PasswordGeneratorPanel } from "./PasswordGeneratorPanel"
 import type { FieldType } from "../../types"
 import type { FieldInput } from "../../stores/vaultStore"
 import { cn } from "@/lib/utils"
@@ -45,6 +46,7 @@ export function InlineField({
   onGeneratePassword,
 }: InlineFieldProps) {
   const [showPassword, setShowPassword] = useState(false)
+  const [showGenerator, setShowGenerator] = useState(false)
   const isPassword = field.fieldType === "password"
   const maskPassword = (value: string) => "\u2022".repeat(value.length)
 
@@ -111,17 +113,26 @@ export function InlineField({
                   >
                     {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </Button>
-                  {onGeneratePassword && (
+                  <div className="relative">
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={onGeneratePassword}
+                      onClick={() => setShowGenerator(!showGenerator)}
                     >
                       <KeyRound className="h-3.5 w-3.5" />
                     </Button>
-                  )}
+                    {showGenerator && (
+                      <PasswordGeneratorPanel
+                        onApply={(pwd) => {
+                          onGeneratePassword?.()
+                          onChange("value", pwd)
+                        }}
+                        onClose={() => setShowGenerator(false)}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
             </div>
