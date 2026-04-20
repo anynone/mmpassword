@@ -134,27 +134,9 @@ export function UnlockScreen({ pending, onUnlock, onBack }: UnlockScreenProps) {
                 </Button>
               </form>
 
-              <div className="mt-6 flex items-center justify-center gap-2">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <span
-                      key={i}
-                      className="w-1.5 h-1.5 rounded-full bg-primary"
-                    />
-                  ))}
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">
-                  {t("unlock.remainingAttempts")} <span className="font-bold">5/5</span>
-                </span>
-              </div>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-center gap-6">
-            <button className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors">
-              {t("unlock.forgotPassword")}
-            </button>
-          </div>
         </div>
       </main>
 

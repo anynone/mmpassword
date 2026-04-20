@@ -112,8 +112,6 @@ export const translations: Record<string, Record<string, string>> = {
     "unlock.show": "Show",
     "unlock.unlockVault": "Unlock Vault",
     "unlock.unlocking": "Unlocking...",
-    "unlock.remainingAttempts": "Remaining attempts:",
-    "unlock.forgotPassword": "Forgot Master Password?",
     "unlock.invalidPassword": "Invalid master password. Please try again.",
 
     // NewVaultScreen
@@ -322,8 +320,6 @@ export const translations: Record<string, Record<string, string>> = {
     "unlock.show": "显示",
     "unlock.unlockVault": "解锁密码库",
     "unlock.unlocking": "解锁中...",
-    "unlock.remainingAttempts": "剩余尝试次数：",
-    "unlock.forgotPassword": "忘记主密码？",
     "unlock.invalidPassword": "主密码无效，请重试。",
 
     // NewVaultScreen
