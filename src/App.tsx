@@ -10,8 +10,18 @@ import { NewVaultScreen } from "./components/screens/NewVaultScreen";
 import { ThemeProvider, ToastProvider } from "./components/common";
 import { Toaster } from "@/components/ui/sonner";
 import { useTranslation } from "./i18n";
+import type { LastGitVault } from "./types/common";
 
 export type AppScreen = "welcome" | "unlock" | "main" | "newVault";
+
+function buildPendingVault(
+  lastVaultPath: string | null,
+  lastGitVault: LastGitVault | null
+): PendingVault | null {
+  if (lastVaultPath) return { type: "local", path: lastVaultPath };
+  if (lastGitVault) return { type: "git", vault: lastGitVault };
+  return null;
+}
 
 interface LoadingState {
   isLoading: boolean;
@@ -43,7 +53,7 @@ function App() {
   const [pendingVault, setPendingVault] = useState<PendingVault | null>(null);
   const [loading, setLoading] = useState<LoadingState>({ isLoading: false, message: "" });
 
-  const { vault, isUnlocked, openGitVault, createGitVault } = useVaultStore();
+  const { vault, isUnlocked, isLocked, openGitVault, createGitVault } = useVaultStore();
   const { loadSettings, openLastVault, lastVaultPath, lastGitVault } = useSettingsStore();
   const { t } = useTranslation();
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -74,6 +84,20 @@ function App() {
     }
   }, [isUnlocked, vault]);
 
+  // Return to unlock when vault is locked (e.g. auto-lock)
+  useEffect(() => {
+    if (isLocked && currentScreen === "main") {
+      const pending = buildPendingVault(lastVaultPath, lastGitVault);
+      if (pending) {
+        setPendingVault(pending);
+        setCurrentScreen("unlock");
+      } else {
+        setPendingVault(null);
+        setCurrentScreen("welcome");
+      }
+    }
+  }, [isLocked, currentScreen, lastVaultPath, lastGitVault]);
+
   const handleOpenVault = (path: string) => {
     setPendingVault({ type: "local", path });
     setCurrentScreen("unlock");
@@ -92,8 +116,14 @@ function App() {
   };
 
   const handleLock = () => {
-    setCurrentScreen("welcome");
-    setPendingVault(null);
+    const pending = buildPendingVault(lastVaultPath, lastGitVault);
+    if (pending) {
+      setPendingVault(pending);
+      setCurrentScreen("unlock");
+    } else {
+      setPendingVault(null);
+      setCurrentScreen("welcome");
+    }
   };
 
   const handleBack = () => {

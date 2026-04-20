@@ -9,6 +9,7 @@ import { GroupDialog } from "../group"
 import { SettingsModal, AboutSettings } from "../settings"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
+import { useAutoLock } from "../../hooks/useAutoLock"
 import type { Entry, Group } from "../../types"
 
 interface MainScreenProps {
@@ -16,6 +17,9 @@ interface MainScreenProps {
 }
 
 export function MainScreen({ onLock }: MainScreenProps) {
+  // Auto-lock on idle
+  useAutoLock();
+
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
