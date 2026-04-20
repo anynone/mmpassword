@@ -1,14 +1,18 @@
 import { Lock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Modal } from "../common/Modal"
 import { useTranslation } from "../../i18n"
 
-export function AboutSettings() {
+interface AboutSettingsProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export function AboutSettings({ isOpen, onClose }: AboutSettingsProps) {
   const { t } = useTranslation()
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-base font-headline font-bold">{t("settings.about")}</h3>
-
+    <Modal isOpen={isOpen} onClose={onClose} title={t("settings.about")} size="md">
       <div className="flex flex-col items-center py-6 space-y-4">
         <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
           <Lock className="h-10 w-10 text-primary-foreground" />
@@ -32,6 +36,6 @@ export function AboutSettings() {
           ))}
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

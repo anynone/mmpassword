@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Lock, Settings } from "lucide-react"
+import { Lock, Settings, Info } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "../common/ConfirmDialog"
@@ -9,9 +9,10 @@ import { useTranslation } from "../../i18n"
 interface TopNavBarProps {
   onLock: () => void
   onSettings: () => void
+  onAbout: () => void
 }
 
-export function TopNavBar({ onLock, onSettings }: TopNavBarProps) {
+export function TopNavBar({ onLock, onSettings, onAbout }: TopNavBarProps) {
   const vault = useVaultStore((state) => state.vault)
   const isUnlocked = useVaultStore((state) => state.isUnlocked)
   const isEditingActive = useVaultStore((state) => state.isEditingActive)
@@ -80,6 +81,15 @@ export function TopNavBar({ onLock, onSettings }: TopNavBarProps) {
           onClick={() => guardAndNavigate(onSettings)}
         >
           <Settings className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
+          title={t("settings.about")}
+          onClick={() => guardAndNavigate(onAbout)}
+        >
+          <Info className="h-5 w-5" />
         </Button>
       </AppHeader>
 

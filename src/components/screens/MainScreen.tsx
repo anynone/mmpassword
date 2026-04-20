@@ -6,7 +6,7 @@ import { FolderOpen } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
 import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout"
 import { GroupDialog } from "../group"
-import { SettingsModal } from "../settings"
+import { SettingsModal, AboutSettings } from "../settings"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
 import type { Entry, Group } from "../../types"
@@ -18,6 +18,7 @@ interface MainScreenProps {
 export function MainScreen({ onLock }: MainScreenProps) {
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 
   const {
@@ -94,6 +95,11 @@ export function MainScreen({ onLock }: MainScreenProps) {
     setIsSettingsOpen(true);
   };
 
+  // Handle about
+  const handleAbout = () => {
+    setIsAboutOpen(true);
+  };
+
   // Entry actions
   const handleDeleteEntry = async (entry: Entry) => {
     const confirmed = await confirm(t("main.deleteEntryConfirm", { title: entry.title }), {
@@ -144,7 +150,7 @@ export function MainScreen({ onLock }: MainScreenProps) {
   return (
     <div className="h-screen flex flex-col bg-surface">
       {/* Top Navigation Bar */}
-      <TopNavBar onLock={handleLock} onSettings={handleSettings} />
+      <TopNavBar onLock={handleLock} onSettings={handleSettings} onAbout={handleAbout} />
 
       {/* Vault Tab Bar */}
       <div className="flex items-center bg-muted/50 px-4 border-b border-border/30 h-10 shrink-0">
@@ -196,6 +202,9 @@ export function MainScreen({ onLock }: MainScreenProps) {
 
       {/* Settings Modal */}
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+      {/* About Modal */}
+      <AboutSettings isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
     </div>
   );
 }
