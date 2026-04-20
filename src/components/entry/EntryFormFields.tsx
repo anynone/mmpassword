@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Plus, Trash2, KeyRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,6 +40,7 @@ interface EntryFormFieldsProps {
 export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }: EntryFormFieldsProps) {
   const groups = useVaultStore((s) => s.groups)
   const [generatorIndex, setGeneratorIndex] = useState<number | null>(null)
+  const generatorBtnRefs = useRef<Record<number, HTMLButtonElement | null>>({})
 
   const updateField = (index: number, key: keyof FieldInput, value: string) => {
     const newFields = data.fields.map((f, i) =>
@@ -174,6 +175,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
                 {field.fieldType === "password" && (
                   <>
                     <Button
+                      ref={(el) => { generatorBtnRefs.current[index] = el }}
                       type="button"
                       variant="ghost"
                       size="icon"
@@ -184,6 +186,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
                     </Button>
                     {generatorIndex === index && (
                       <PasswordGeneratorPanel
+                        triggerRef={{ current: generatorBtnRefs.current[index] ?? null }}
                         onApply={(pwd) => updateField(index, "value", pwd)}
                         onClose={() => setGeneratorIndex(null)}
                       />

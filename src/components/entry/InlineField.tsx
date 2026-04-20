@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Copy, Eye, EyeOff, KeyRound, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,6 +47,7 @@ export function InlineField({
 }: InlineFieldProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showGenerator, setShowGenerator] = useState(false)
+  const generatorBtnRef = useRef<HTMLButtonElement>(null)
   const isPassword = field.fieldType === "password"
   const maskPassword = (value: string) => "\u2022".repeat(value.length)
 
@@ -115,6 +116,7 @@ export function InlineField({
                   </Button>
                   <div className="relative">
                     <Button
+                      ref={generatorBtnRef}
                       type="button"
                       variant="ghost"
                       size="icon"
@@ -125,6 +127,7 @@ export function InlineField({
                     </Button>
                     {showGenerator && (
                       <PasswordGeneratorPanel
+                        triggerRef={generatorBtnRef}
                         onApply={(pwd) => {
                           onGeneratePassword?.()
                           onChange("value", pwd)

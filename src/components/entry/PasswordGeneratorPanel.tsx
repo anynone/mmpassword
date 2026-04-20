@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, type RefObject } from "react"
+import { createPortal } from "react-dom"
 import { RefreshCw, Check, ChevronUp, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -6,14 +7,16 @@ import { generatePasswordString } from "../../utils/passwordGenerator"
 import { DEFAULT_PASSWORD_OPTIONS, type PasswordOptions } from "../../types/common"
 
 interface PasswordGeneratorPanelProps {
+  triggerRef: RefObject<HTMLButtonElement | null>
   onApply: (password: string) => void
   onClose: () => void
 }
 
-export function PasswordGeneratorPanel({ onApply, onClose }: PasswordGeneratorPanelProps) {
+export function PasswordGeneratorPanel({ triggerRef, onApply, onClose }: PasswordGeneratorPanelProps) {
   const [options, setOptions] = useState<PasswordOptions>(DEFAULT_PASSWORD_OPTIONS)
   const [password, setPassword] = useState("")
   const panelRef = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState<{ top: number; right: number }>({ top: 0, right: 0 })
 
   const regenerate = () => {
     setPassword(generatePasswordString(options))
@@ -24,14 +27,31 @@ export function PasswordGeneratorPanel({ onApply, onClose }: PasswordGeneratorPa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options])
 
+  // Calculate position from trigger button
+  useEffect(() => {
+    const updatePosition = () => {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect()
+        setPosition({
+          top: rect.bottom + 4,
+          right: window.innerWidth - rect.right,
+        })
+      }
+    }
+    updatePosition()
+    window.addEventListener("resize", updatePosition)
+    return () => window.removeEventListener("resize", updatePosition)
+  }, [triggerRef])
+
   // Close on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      // Don't close if clicking the trigger button (it handles its own toggle)
+      if (triggerRef.current && triggerRef.current.contains(e.target as Node)) return
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         onClose()
       }
     }
-    // Delay to avoid the opening click immediately closing
     const timer = setTimeout(() => {
       document.addEventListener("mousedown", handleClickOutside)
     }, 0)
@@ -39,17 +59,15 @@ export function PasswordGeneratorPanel({ onApply, onClose }: PasswordGeneratorPa
       clearTimeout(timer)
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [onClose])
+  }, [onClose, triggerRef])
 
   const updateOption = (key: keyof PasswordOptions, value: number | boolean) => {
     setOptions((prev) => {
       const next = { ...prev, [key]: value }
-      // Ensure at least one character type is enabled
       if (typeof value === "boolean" && !value) {
         const hasAny = next.uppercase || next.lowercase || next.digits || next.symbols
         if (!hasAny) return prev
       }
-      // Clamp length to 4-64
       if (key === "length") {
         next.length = Math.max(4, Math.min(64, value as number))
       }
@@ -62,14 +80,23 @@ export function PasswordGeneratorPanel({ onApply, onClose }: PasswordGeneratorPa
     onClose()
   }
 
-  return (
+  return createPortal(
     <div
       ref={panelRef}
-      className="absolute right-0 top-full mt-1 z-50 w-72 rounded-lg border border-border bg-popover p-3 shadow-lg"
+      className="fixed z-[9999] w-72 rounded-lg border border-border p-3 shadow-lg"
+      style={{
+        top: position.top,
+        right: position.right,
+        backgroundColor: 'rgb(var(--popover))',
+        color: 'rgb(var(--popover-foreground))',
+      }}
     >
       {/* Password Preview */}
       <div className="flex items-center gap-1.5 mb-3">
-        <code className="flex-1 text-xs font-mono bg-accent/50 rounded px-2 py-1.5 break-all select-all min-h-[28px] leading-relaxed">
+        <code
+          className="flex-1 text-xs font-mono rounded px-2 py-1.5 break-all select-all min-h-[28px] leading-relaxed"
+          style={{ backgroundColor: 'rgb(var(--accent))' }}
+        >
           {password}
         </code>
         <Button
@@ -154,6 +181,7 @@ export function PasswordGeneratorPanel({ onApply, onClose }: PasswordGeneratorPa
         <Check className="h-3 w-3 mr-1" />
         Apply
       </Button>
-    </div>
+    </div>,
+    document.body
   )
 }
