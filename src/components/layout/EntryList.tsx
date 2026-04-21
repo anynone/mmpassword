@@ -166,7 +166,7 @@ export function EntryList({
   return (
     <div className="w-72 shrink-0 bg-muted/20 flex flex-col border-r border-border/30">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-border/30">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
           {t("entryList.entries")}
         </span>
@@ -182,7 +182,7 @@ export function EntryList({
       </div>
 
       {/* Search */}
-      <div className="px-3 py-2">
+      <div className="px-3 py-1.5">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input

@@ -13,7 +13,6 @@ interface TopNavBarProps {
 }
 
 export function TopNavBar({ onLock, onSettings, onAbout }: TopNavBarProps) {
-  const vault = useVaultStore((state) => state.vault)
   const isUnlocked = useVaultStore((state) => state.isUnlocked)
   const isEditingActive = useVaultStore((state) => state.isEditingActive)
   const cancelEditing = useVaultStore((state) => state.cancelEditing)
@@ -57,11 +56,6 @@ export function TopNavBar({ onLock, onSettings, onAbout }: TopNavBarProps) {
   return (
     <>
       <AppHeader>
-        {vault && isUnlocked && (
-          <span className="mr-auto ml-4 text-sm text-muted-foreground">
-            {vault.name}
-          </span>
-        )}
         {isUnlocked && (
           <Button
             variant="ghost"

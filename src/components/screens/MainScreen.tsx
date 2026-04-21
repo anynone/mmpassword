@@ -2,7 +2,6 @@ import { useState, useEffect } from "react"
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { confirm } from "@tauri-apps/plugin-dialog"
 import { listen } from "@tauri-apps/api/event"
-import { FolderOpen } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
 import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout"
 import { GroupDialog } from "../group"
@@ -155,16 +154,6 @@ export function MainScreen({ onLock }: MainScreenProps) {
     <div className="h-screen flex flex-col bg-surface">
       {/* Top Navigation Bar */}
       <TopNavBar onLock={handleLock} onSettings={handleSettings} onAbout={handleAbout} />
-
-      {/* Vault Tab Bar */}
-      <div className="flex items-center bg-muted/50 px-4 border-b border-border/30 h-10 shrink-0">
-        <div className="flex items-center bg-card px-4 h-full border-t-2 border-primary rounded-t-lg shadow-sm">
-          <FolderOpen className="h-3.5 w-3.5 mr-2 text-primary" />
-          <span className="text-xs font-semibold">
-            {vault?.name || "Vault"}.mmp
-          </span>
-        </div>
-      </div>
 
       {/* Main Workspace */}
       <div className="flex flex-1 overflow-hidden">
