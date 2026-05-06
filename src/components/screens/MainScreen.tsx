@@ -2,7 +2,6 @@ import { useState, useEffect } from "react"
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { confirm } from "@tauri-apps/plugin-dialog"
 import { listen } from "@tauri-apps/api/event"
-import { getVersion } from "@tauri-apps/api/app"
 import { useVaultStore } from "../../stores/vaultStore"
 import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout"
 import { GroupDialog } from "../group"
@@ -19,11 +18,6 @@ interface MainScreenProps {
 export function MainScreen({ onLock }: MainScreenProps) {
   // Auto-lock on idle
   useAutoLock();
-
-  const [appVersion, setAppVersion] = useState("")
-  useEffect(() => {
-    getVersion().then(setAppVersion)
-  }, [])
 
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -187,7 +181,7 @@ export function MainScreen({ onLock }: MainScreenProps) {
       </div>
 
       {/* Footer */}
-      <StatusBar status="unlocked" version={appVersion} isSyncing={pendingSyncCount > 0} />
+      <StatusBar status="unlocked" isSyncing={pendingSyncCount > 0} />
 
       {/* Group Dialog (still uses modal) */}
       <GroupDialog

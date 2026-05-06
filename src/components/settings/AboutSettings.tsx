@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react"
+import { getVersion } from "@tauri-apps/api/app"
 import { Lock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Modal } from "../common/Modal"
@@ -10,6 +12,8 @@ interface AboutSettingsProps {
 
 export function AboutSettings({ isOpen, onClose }: AboutSettingsProps) {
   const { t } = useTranslation()
+  const [version, setVersion] = useState("")
+  useEffect(() => { getVersion().then(setVersion) }, [])
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t("settings.about")} size="md">
@@ -20,7 +24,7 @@ export function AboutSettings({ isOpen, onClose }: AboutSettingsProps) {
 
         <div className="text-center">
           <h4 className="text-xl font-headline font-bold">{t("app.name")}</h4>
-          <p className="text-sm text-muted-foreground mt-1">v0.1.0</p>
+          <p className="text-sm text-muted-foreground mt-1">v{version}</p>
           <p className="text-sm text-muted-foreground mt-1">谷川信息系统-技术中台</p>
         </div>
 

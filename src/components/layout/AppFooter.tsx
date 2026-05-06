@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react"
+import { getVersion } from "@tauri-apps/api/app"
 import { useTranslation } from "../../i18n"
 import { ShieldCheck, LockOpen, Lock, RefreshCw, FolderOpen, Github } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
@@ -31,11 +33,12 @@ function getVaultSourceInfo(): { label: string; icon: "local" | "git" } | null {
 
 export function AppFooter({
   status = "secure",
-  version = "0.1.0",
   isSyncing = false,
 }: AppFooterProps) {
   const { t } = useTranslation()
   const isUnlocked = useVaultStore((s) => s.isUnlocked)
+  const [version, setVersion] = useState("")
+  useEffect(() => { getVersion().then(setVersion) }, [])
   const vault = useVaultStore((s) => s.vault)
 
   const statusConfig = {
