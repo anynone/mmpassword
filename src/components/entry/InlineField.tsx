@@ -219,26 +219,26 @@ export function InlineField({
                 const revealed = revealedHistory[i] ?? false
                 return (
                   <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="font-mono tracking-wider">
+                    <span className="font-mono tracking-wider min-w-0 truncate">
                       {revealed ? entry.value : maskPassword(entry.value)}
+                    </span>
+                    <span className="text-[10px] whitespace-nowrap ml-auto">
+                      {new Date(entry.changedAt).toLocaleString()}
                     </span>
                     <button
                       type="button"
-                      className="hover:text-foreground transition-colors"
+                      className="hover:text-foreground transition-colors flex-shrink-0"
                       onClick={() => setRevealedHistory(prev => ({ ...prev, [i]: !prev[i] }))}
                     >
                       {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                     </button>
                     <button
                       type="button"
-                      className="hover:text-foreground transition-colors"
+                      className="hover:text-foreground transition-colors flex-shrink-0"
                       onClick={() => onCopy?.("历史密码", entry.value)}
                     >
                       <Copy className="h-3 w-3" />
                     </button>
-                    <span className="text-[10px] ml-auto whitespace-nowrap">
-                      {new Date(entry.changedAt).toLocaleString()}
-                    </span>
                   </div>
                 )
               })}
