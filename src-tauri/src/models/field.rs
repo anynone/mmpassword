@@ -1,5 +1,6 @@
 //! Field model for password entries
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Field types for entry fields
@@ -20,6 +21,19 @@ pub enum FieldType {
     Username,
 }
 
+/// A historical password value with its change timestamp
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PasswordHistoryEntry {
+    /// Previous password value
+    pub value: String,
+    /// When this password was replaced
+    pub changed_at: DateTime<Utc>,
+}
+
+/// Maximum number of password history entries per field
+pub const MAX_PASSWORD_HISTORY: usize = 3;
+
 /// A field within an entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,6 +46,9 @@ pub struct Field {
     pub field_type: FieldType,
     /// Whether the field is protected (sensitive)
     pub protected: bool,
+    /// History of previous password values (only for password-type fields)
+    #[serde(default)]
+    pub password_history: Vec<PasswordHistoryEntry>,
 }
 
 impl Field {
@@ -42,6 +59,7 @@ impl Field {
             value: value.into(),
             field_type,
             protected: matches!(field_type, FieldType::Password),
+            password_history: Vec::new(),
         }
     }
 

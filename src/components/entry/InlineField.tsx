@@ -1,5 +1,5 @@
 import { useState, useRef } from "react"
-import { Copy, Eye, EyeOff, KeyRound, Trash2 } from "lucide-react"
+import { Copy, Eye, EyeOff, KeyRound, Trash2, History } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select"
 import { PasswordStrengthIndicator } from "../common/PasswordStrengthIndicator"
 import { PasswordGeneratorPanel } from "./PasswordGeneratorPanel"
-import type { FieldType } from "../../types"
+import type { FieldType, PasswordHistoryEntry } from "../../types"
 import type { FieldInput } from "../../stores/vaultStore"
 import { cn } from "@/lib/utils"
 
@@ -31,6 +31,7 @@ interface InlineFieldProps {
   onRemove: () => void
   onCopy?: (fieldName: string, value: string) => void
   onGeneratePassword?: () => void
+  passwordHistory?: PasswordHistoryEntry[]
 }
 
 const formatFieldName = (name: string) => {
@@ -44,11 +45,15 @@ export function InlineField({
   onRemove,
   onCopy,
   onGeneratePassword,
+  passwordHistory,
 }: InlineFieldProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showGenerator, setShowGenerator] = useState(false)
+  const [expandedHistory, setExpandedHistory] = useState(false)
+  const [revealedHistory, setRevealedHistory] = useState<Record<number, boolean>>({})
   const generatorBtnRef = useRef<HTMLButtonElement>(null)
   const isPassword = field.fieldType === "password"
+  const hasHistory = !isEditing && isPassword && passwordHistory && passwordHistory.length > 0
   const maskPassword = (value: string) => "\u2022".repeat(value.length)
 
   return (
@@ -194,6 +199,52 @@ export function InlineField({
       {/* Password strength indicator in edit mode */}
       {isEditing && isPassword && field.value && (
         <PasswordStrengthIndicator password={field.value} />
+      )}
+
+      {/* Password history in view mode */}
+      {hasHistory && (
+        <div className="ml-28 mt-1">
+          <button
+            type="button"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setExpandedHistory(!expandedHistory)}
+          >
+            <History className="h-3 w-3" />
+            <span>历史密码 ({passwordHistory!.length})</span>
+            <span className="text-[10px]">{expandedHistory ? "▲" : "▼"}</span>
+          </button>
+          {expandedHistory && (
+            <div className="mt-1 space-y-1">
+              {passwordHistory!.map((entry, i) => {
+                const revealed = revealedHistory[i] ?? false
+                return (
+                  <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-mono tracking-wider">
+                      {revealed ? entry.value : maskPassword(entry.value)}
+                    </span>
+                    <button
+                      type="button"
+                      className="hover:text-foreground transition-colors"
+                      onClick={() => setRevealedHistory(prev => ({ ...prev, [i]: !prev[i] }))}
+                    >
+                      {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    </button>
+                    <button
+                      type="button"
+                      className="hover:text-foreground transition-colors"
+                      onClick={() => onCopy?.("历史密码", entry.value)}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </button>
+                    <span className="text-[10px] ml-auto whitespace-nowrap">
+                      {new Date(entry.changedAt).toLocaleString()}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

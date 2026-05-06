@@ -249,6 +249,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
               onRemove={() => removeField(index)}
               onCopy={onCopyField}
               onGeneratePassword={() => {}}
+              passwordHistory={!isActive && entry ? entry.fields[index]?.passwordHistory : undefined}
             />
           ))}
 

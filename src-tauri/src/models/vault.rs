@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{Entry, Group};
+use super::field::{FieldType, PasswordHistoryEntry, MAX_PASSWORD_HISTORY};
 
 /// Current vault format version
 pub const VAULT_VERSION: u32 = 1;
@@ -96,8 +97,31 @@ impl Vault {
     }
 
     /// Update an entry
-    pub fn update_entry(&mut self, id: Uuid, update: super::entry::UpdateEntryRequest) -> bool {
+    pub fn update_entry(&mut self, id: Uuid, mut update: super::entry::UpdateEntryRequest) -> bool {
         if let Some(entry) = self.get_entry_mut(id) {
+            // Record password history before replacing fields
+            let now = Utc::now();
+            for new_field in &mut update.fields {
+                if new_field.field_type != FieldType::Password {
+                    continue;
+                }
+                if let Some(old_field) = entry.fields.iter().find(|f| f.name == new_field.name) {
+                    if old_field.value != new_field.value {
+                        // Carry over existing history from the old field, then prepend the old value
+                        new_field.password_history = old_field.password_history.clone();
+                        let history_entry = PasswordHistoryEntry {
+                            value: old_field.value.clone(),
+                            changed_at: now,
+                        };
+                        new_field.password_history.insert(0, history_entry);
+                        new_field.password_history.truncate(MAX_PASSWORD_HISTORY);
+                    } else {
+                        // Value unchanged — preserve existing history
+                        new_field.password_history = old_field.password_history.clone();
+                    }
+                }
+            }
+
             entry.title = update.title;
             entry.group_id = update.group_id;
             entry.fields = update.fields;

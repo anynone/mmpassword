@@ -2,11 +2,17 @@ export type EntryType = "websiteLogin" | "secureNote";
 
 export type FieldType = "text" | "password" | "email" | "url" | "notes" | "username";
 
+export interface PasswordHistoryEntry {
+  value: string;
+  changedAt: string;
+}
+
 export interface Field {
   name: string;
   value: string;
   fieldType: FieldType;
   protected?: boolean;
+  passwordHistory?: PasswordHistoryEntry[];
 }
 
 export interface Entry {
