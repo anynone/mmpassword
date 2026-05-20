@@ -5,11 +5,12 @@
 
 use std::path::{Path, PathBuf};
 
-use tokio::process::Command;
-
 use crate::error::{AppError, Result};
 use super::ssh_config::{DetectedSshKey, SshKeyValidation};
 use super::repository::GitAccessValidation;
+
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 /// Git operations handler
 pub struct GitOperations {
@@ -28,20 +29,79 @@ impl GitOperations {
 
     /// Build SSH command string with identity file
     fn build_ssh_command(key_path: &Path) -> Option<String> {
-        let key_str = key_path.to_string_lossy();
+        // Convert Windows backslashes to forward slashes for SSH compatibility
+        let key_str = key_path.to_string_lossy().replace('\\', "/");
         Some(format!(
             "ssh -o IdentitiesOnly=yes -o IdentityFile={} -o StrictHostKeyChecking=accept-new",
             key_str
         ))
     }
 
+    /// Create a command without showing a window on Windows
+    fn create_command(program: &str) -> std::process::Command {
+        #[cfg(windows)]
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        let mut cmd = std::process::Command::new(program);
+
+        #[cfg(windows)]
+        cmd.creation_flags(CREATE_NO_WINDOW);
+
+        cmd
+    }
+
+    /// Run a command asynchronously without blocking
+    async fn run_command_async(program: &str, args: &[&str]) -> Result<std::process::Output> {
+        let program = program.to_string();
+        let args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+        let output = tokio::task::spawn_blocking(move || {
+            let args_ref: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+            Self::create_command(&program).args(&args_ref).output()
+        })
+            .await
+            .map_err(|e| AppError::GitError(format!("Command join error: {}", e)))?
+            .map_err(|e| AppError::GitError(format!("Command execution error: {}", e)))?;
+        Ok(output)
+    }
+
     /// Create a git command with SSH environment configured
-    fn git_command(&self) -> Command {
-        let mut cmd = Command::new("git");
+    fn git_command(&self) -> std::process::Command {
+        let mut cmd = Self::create_command("git");
         if let Some(ref ssh_cmd) = self.ssh_command {
             cmd.env("GIT_SSH_COMMAND", ssh_cmd);
         }
         cmd
+    }
+
+    /// Run git command asynchronously
+    async fn run_git_command(&self, args: &[&str]) -> Result<std::process::Output> {
+        let mut cmd = self.git_command();
+        let args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+
+        let output = tokio::task::spawn_blocking(move || {
+            cmd.args(&args).output()
+        })
+            .await
+            .map_err(|e| AppError::GitError(format!("Command join error: {}", e)))?
+            .map_err(|e| AppError::GitError(format!("Command execution error: {}", e)))?;
+
+        Ok(output)
+    }
+
+    /// Run git command asynchronously in a specific directory
+    async fn run_git_command_in_dir(&self, args: &[&str], dir: &Path) -> Result<std::process::Output> {
+        let mut cmd = self.git_command();
+        let args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+        let dir = dir.to_path_buf();
+
+        let output = tokio::task::spawn_blocking(move || {
+            cmd.current_dir(&dir).args(&args).output()
+        })
+            .await
+            .map_err(|e| AppError::GitError(format!("Command join error: {}", e)))?
+            .map_err(|e| AppError::GitError(format!("Command execution error: {}", e)))?;
+
+        Ok(output)
     }
 
     /// Detect SSH keys in the ~/.ssh directory
@@ -138,48 +198,36 @@ impl GitOperations {
         }
 
         // Try to get key fingerprint using ssh-keygen
-        let output = Command::new("ssh-keygen")
-            .args(["-l", "-f"])
-            .arg(key_path)
-            .output()
-            .await;
+        let output = Self::run_command_async("ssh-keygen", &["-l", "-f", &key_path.to_string_lossy()])
+            .await?;
 
-        match output {
-            Ok(output) if output.status.success() => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let parts: Vec<&str> = stdout.trim().split_whitespace().collect();
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let parts: Vec<&str> = stdout.trim().split_whitespace().collect();
 
-                // Format: "256 SHA256:xxx user@host (ED25519)"
-                let fingerprint = parts.get(1).map(|s| s.to_string());
-                let key_type = parts.get(2).and_then(|s| {
-                    s.trim_start_matches('(')
-                        .trim_end_matches(')')
-                        .to_string()
-                        .into()
-                });
+            // Format: "256 SHA256:xxx user@host (ED25519)"
+            let fingerprint = parts.get(1).map(|s| s.to_string());
+            let key_type = parts.get(2).and_then(|s| {
+                s.trim_start_matches('(')
+                    .trim_end_matches(')')
+                    .to_string()
+                    .into()
+            });
 
-                Ok(SshKeyValidation {
-                    valid: true,
-                    key_type,
-                    fingerprint,
-                    error: None,
-                })
-            }
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Ok(SshKeyValidation {
-                    valid: false,
-                    key_type: None,
-                    fingerprint: None,
-                    error: Some(stderr.to_string()),
-                })
-            }
-            Err(e) => Ok(SshKeyValidation {
+            Ok(SshKeyValidation {
+                valid: true,
+                key_type,
+                fingerprint,
+                error: None,
+            })
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            Ok(SshKeyValidation {
                 valid: false,
                 key_type: None,
                 fingerprint: None,
-                error: Some(format!("Failed to run ssh-keygen: {}", e)),
-            }),
+                error: if stderr.is_empty() { Some("Unknown error".to_string()) } else { Some(stderr.to_string()) },
+            })
         }
     }
 
@@ -187,92 +235,69 @@ impl GitOperations {
     pub async fn validate_git_access(&self, repo_url: &str) -> Result<GitAccessValidation> {
         // Use git ls-remote to test access
         let output = self
-            .git_command()
-            .args(["ls-remote", "--symref", repo_url, "HEAD"])
-            .output()
-            .await;
+            .run_git_command(&["ls-remote", "--symref", repo_url, "HEAD"])
+            .await?;
 
-        match output {
-            Ok(output) if output.status.success() => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
 
-                // Parse default branch from output
-                // Format: "ref: refs/heads/main	HEAD"
-                let default_branch = stdout
-                    .lines()
-                    .find(|line| line.starts_with("ref: "))
-                    .and_then(|line| {
-                        line.strip_prefix("ref: refs/heads/")
-                            .map(|s| s.split_whitespace().next().unwrap_or("main").to_string())
-                    });
+            // Parse default branch from output
+            // Format: "ref: refs/heads/main	HEAD"
+            let default_branch = stdout
+                .lines()
+                .find(|line| line.starts_with("ref: "))
+                .and_then(|line| {
+                    line.strip_prefix("ref: refs/heads/")
+                        .map(|s| s.split_whitespace().next().unwrap_or("main").to_string())
+                });
 
-                // Extract repo name from URL
-                let repo_name = extract_repo_name(repo_url);
+            // Extract repo name from URL
+            let repo_name = extract_repo_name(repo_url);
 
-                Ok(GitAccessValidation {
-                    valid: true,
-                    repo_name,
-                    default_branch,
-                    error: None,
-                })
-            }
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Ok(GitAccessValidation {
-                    valid: false,
-                    repo_name: None,
-                    default_branch: None,
-                    error: Some(stderr.to_string()),
-                })
-            }
-            Err(e) => Ok(GitAccessValidation {
+            Ok(GitAccessValidation {
+                valid: true,
+                repo_name,
+                default_branch,
+                error: None,
+            })
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            Ok(GitAccessValidation {
                 valid: false,
                 repo_name: None,
                 default_branch: None,
-                error: Some(format!("Failed to run git: {}", e)),
-            }),
+                error: if stderr.is_empty() { Some("Unknown error".to_string()) } else { Some(stderr.to_string()) },
+            })
         }
     }
 
     /// Check if a remote branch exists
     pub async fn remote_branch_exists(&self, repo_url: &str, branch: &str) -> Result<bool> {
         let output = self
-            .git_command()
-            .args(["ls-remote", "--heads", repo_url, &format!("refs/heads/{}", branch)])
-            .output()
-            .await;
+            .run_git_command(&["ls-remote", "--heads", repo_url, &format!("refs/heads/{}", branch)])
+            .await?;
 
-        match output {
-            Ok(output) if output.status.success() => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                Ok(!stdout.trim().is_empty())
-            }
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Err(AppError::GitError(format!("Failed to check remote branch: {}", stderr)))
-            }
-            Err(e) => Err(AppError::GitError(format!("Failed to run git ls-remote: {}", e))),
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            Ok(!stdout.trim().is_empty())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            Err(AppError::GitError(format!("Failed to check remote branch: {}", stderr)))
         }
     }
 
     /// Check if the remote repository has any branches
     pub async fn has_remote_branches(&self, repo_url: &str) -> Result<bool> {
         let output = self
-            .git_command()
-            .args(["ls-remote", "--heads", repo_url])
-            .output()
-            .await;
+            .run_git_command(&["ls-remote", "--heads", repo_url])
+            .await?;
 
-        match output {
-            Ok(output) if output.status.success() => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                Ok(!stdout.trim().is_empty())
-            }
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Err(AppError::GitError(format!("Failed to check remote branches: {}", stderr)))
-            }
-            Err(e) => Err(AppError::GitError(format!("Failed to run git ls-remote: {}", e))),
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            Ok(!stdout.trim().is_empty())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            Err(AppError::GitError(format!("Failed to check remote branches: {}", stderr)))
         }
     }
 
@@ -291,56 +316,47 @@ impl GitOperations {
 
         if branch_exists {
             // Branch exists, clone it directly
+            let target_dir_str = target_dir.to_string_lossy().to_string();
             let output = self
-                .git_command()
-                .args([
+                .run_git_command(&[
                     "clone",
                     "--branch", branch,
                     "--single-branch",
                     "--depth", "1",
                     repo_url,
+                    &target_dir_str,
                 ])
-                .arg(target_dir)
-                .output()
-                .await;
+                .await?;
 
-            match output {
-                Ok(output) if output.status.success() => return Ok(()),
-                Ok(output) => {
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    return Err(AppError::GitError(stderr.to_string()));
-                }
-                Err(e) => return Err(AppError::GitError(format!("Failed to run git clone: {}", e))),
+            if output.status.success() {
+                Ok(())
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Err(AppError::GitError(stderr.to_string()))
             }
-        }
+        } else {
+            // Target branch doesn't exist, check if repo has any branches
+            let has_branches = self.has_remote_branches(repo_url).await?;
 
-        // Target branch doesn't exist, check if repo has any branches
-        let has_branches = self.has_remote_branches(repo_url).await?;
+            if has_branches {
+                // Repo has branches but not the target one
+                // Clone the default branch and create the new branch
+                let target_dir_str = target_dir.to_string_lossy().to_string();
+                let output = self
+                    .run_git_command(&["clone", repo_url, &target_dir_str])
+                    .await?;
 
-        if has_branches {
-            // Repo has branches but not the target one
-            // Clone the default branch and create the new branch
-            let output = self
-                .git_command()
-                .args(["clone", repo_url])
-                .arg(target_dir)
-                .output()
-                .await;
-
-            match output {
-                Ok(output) if output.status.success() => {
+                if output.status.success() {
                     // Create and switch to the new branch
                     self.create_and_push_branch(target_dir, branch).await
-                }
-                Ok(output) => {
+                } else {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     Err(AppError::GitError(stderr.to_string()))
                 }
-                Err(e) => Err(AppError::GitError(format!("Failed to run git clone: {}", e))),
+            } else {
+                // Empty repository - initialize locally and push
+                self.init_empty_repo(target_dir, repo_url, branch).await
             }
-        } else {
-            // Empty repository - initialize locally and push
-            self.init_empty_repo(target_dir, repo_url, branch).await
         }
     }
 
@@ -348,36 +364,24 @@ impl GitOperations {
     async fn create_and_push_branch(&self, repo_dir: &Path, branch: &str) -> Result<()> {
         // Create and switch to the new branch
         let checkout_output = self
-            .git_command()
-            .args(["checkout", "-b", branch])
-            .current_dir(repo_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["checkout", "-b", branch], repo_dir)
+            .await?;
 
-        match checkout_output {
-            Ok(output) if output.status.success() => {
-                // Push the new branch to remote and set upstream
-                let push_output = self
-                    .git_command()
-                    .args(["push", "-u", "origin", branch])
-                    .current_dir(repo_dir)
-                    .output()
-                    .await;
+        if checkout_output.status.success() {
+            // Push the new branch to remote and set upstream
+            let push_output = self
+                .run_git_command_in_dir(&["push", "-u", "origin", branch], repo_dir)
+                .await?;
 
-                match push_output {
-                    Ok(output) if output.status.success() => Ok(()),
-                    Ok(output) => {
-                        let stderr = String::from_utf8_lossy(&output.stderr);
-                        Err(AppError::GitError(format!("Failed to push new branch: {}", stderr)))
-                    }
-                    Err(e) => Err(AppError::GitError(format!("Failed to run git push: {}", e))),
-                }
+            if push_output.status.success() {
+                Ok(())
+            } else {
+                let stderr = String::from_utf8_lossy(&push_output.stderr);
+                Err(AppError::GitError(format!("Failed to push new branch: {}", stderr)))
             }
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Err(AppError::GitError(format!("Failed to create branch: {}", stderr)))
-            }
-            Err(e) => Err(AppError::GitError(format!("Failed to run git checkout: {}", e))),
+        } else {
+            let stderr = String::from_utf8_lossy(&checkout_output.stderr);
+            Err(AppError::GitError(format!("Failed to create branch: {}", stderr)))
         }
     }
 
@@ -390,44 +394,27 @@ impl GitOperations {
 
         // Initialize git repo
         let init_output = self
-            .git_command()
-            .args(["init"])
-            .current_dir(target_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["init"], target_dir)
+            .await?;
 
-        match init_output {
-            Ok(output) if output.status.success() => {}
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                return Err(AppError::GitError(format!("Failed to init repo: {}", stderr)));
-            }
-            Err(e) => return Err(AppError::GitError(format!("Failed to run git init: {}", e))),
+        if !init_output.status.success() {
+            let stderr = String::from_utf8_lossy(&init_output.stderr);
+            return Err(AppError::GitError(format!("Failed to init repo: {}", stderr)));
         }
 
         // Set initial branch name (git 2.28+)
         let _ = self
-            .git_command()
-            .args(["branch", "-M", branch])
-            .current_dir(target_dir)
-            .output()
+            .run_git_command_in_dir(&["branch", "-M", branch], target_dir)
             .await;
 
         // Add remote
         let remote_output = self
-            .git_command()
-            .args(["remote", "add", "origin", repo_url])
-            .current_dir(target_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["remote", "add", "origin", repo_url], target_dir)
+            .await?;
 
-        match remote_output {
-            Ok(output) if output.status.success() => {}
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                return Err(AppError::GitError(format!("Failed to add remote: {}", stderr)));
-            }
-            Err(e) => return Err(AppError::GitError(format!("Failed to run git remote: {}", e))),
+        if !remote_output.status.success() {
+            let stderr = String::from_utf8_lossy(&remote_output.stderr);
+            return Err(AppError::GitError(format!("Failed to add remote: {}", stderr)));
         }
 
         // Create a placeholder file for initial commit
@@ -438,79 +425,53 @@ impl GitOperations {
 
         // Add and commit
         let add_output = self
-            .git_command()
-            .args(["add", "README.md"])
-            .current_dir(target_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["add", "README.md"], target_dir)
+            .await?;
 
-        match add_output {
-            Ok(output) if output.status.success() => {}
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                return Err(AppError::GitError(format!("Failed to git add: {}", stderr)));
-            }
-            Err(e) => return Err(AppError::GitError(format!("Failed to run git add: {}", e))),
+        if !add_output.status.success() {
+            let stderr = String::from_utf8_lossy(&add_output.stderr);
+            return Err(AppError::GitError(format!("Failed to git add: {}", stderr)));
         }
 
         let commit_output = self
-            .git_command()
-            .args(["commit", "-m", "Initial commit"])
-            .current_dir(target_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["commit", "-m", "Initial commit"], target_dir)
+            .await?;
 
-        match commit_output {
-            Ok(output) if output.status.success() => {}
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                return Err(AppError::GitError(format!("Failed to commit: {}", stderr)));
-            }
-            Err(e) => return Err(AppError::GitError(format!("Failed to run git commit: {}", e))),
+        if !commit_output.status.success() {
+            let stderr = String::from_utf8_lossy(&commit_output.stderr);
+            return Err(AppError::GitError(format!("Failed to commit: {}", stderr)));
         }
 
         // Push to remote
         let push_output = self
-            .git_command()
-            .args(["push", "-u", "origin", branch])
-            .current_dir(target_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["push", "-u", "origin", branch], target_dir)
+            .await?;
 
-        match push_output {
-            Ok(output) if output.status.success() => Ok(()),
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Err(AppError::GitError(format!("Failed to push to remote: {}", stderr)))
-            }
-            Err(e) => Err(AppError::GitError(format!("Failed to run git push: {}", e))),
+        if push_output.status.success() {
+            Ok(())
+        } else {
+            let stderr = String::from_utf8_lossy(&push_output.stderr);
+            Err(AppError::GitError(format!("Failed to push to remote: {}", stderr)))
         }
     }
 
     /// Pull changes from remote
     pub async fn pull_changes(&self, repo_dir: &Path, branch: &str) -> Result<String> {
         let output = self
-            .git_command()
-            .args(["pull", "--rebase", "origin", branch])
-            .current_dir(repo_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["pull", "--rebase", "origin", branch], repo_dir)
+            .await?;
 
-        match output {
-            Ok(output) if output.status.success() => {
-                // Get the latest commit SHA
+        if output.status.success() {
+            // Get the latest commit SHA
+            self.get_current_commit(repo_dir).await
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            // Check if it's just "Already up to date"
+            if stderr.contains("Already up to date") || stderr.contains("Already up-to-date") {
                 self.get_current_commit(repo_dir).await
+            } else {
+                Err(AppError::GitError(stderr.to_string()))
             }
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                // Check if it's just "Already up to date"
-                if stderr.contains("Already up to date") || stderr.contains("Already up-to-date") {
-                    self.get_current_commit(repo_dir).await
-                } else {
-                    Err(AppError::GitError(stderr.to_string()))
-                }
-            }
-            Err(e) => Err(AppError::GitError(format!("Failed to run git pull: {}", e))),
         }
     }
 
@@ -524,80 +485,55 @@ impl GitOperations {
     ) -> Result<String> {
         // Stage the file
         let add_output = self
-            .git_command()
-            .args(["add", file_path])
-            .current_dir(repo_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["add", file_path], repo_dir)
+            .await?;
 
-        match add_output {
-            Ok(output) if output.status.success() => {}
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                return Err(AppError::GitError(format!("git add failed: {}", stderr)));
-            }
-            Err(e) => return Err(AppError::GitError(format!("Failed to run git add: {}", e))),
+        if !add_output.status.success() {
+            let stderr = String::from_utf8_lossy(&add_output.stderr);
+            return Err(AppError::GitError(format!("git add failed: {}", stderr)));
         }
 
         // Commit
         let commit_output = self
-            .git_command()
-            .args(["commit", "-m", commit_message])
-            .current_dir(repo_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["commit", "-m", commit_message], repo_dir)
+            .await?;
 
-        match commit_output {
-            Ok(output) if output.status.success() => {}
-            Ok(output) => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                // Check if there's nothing to commit
-                if stdout.contains("nothing to commit") || stderr.contains("nothing to commit") {
-                    return self.get_current_commit(repo_dir).await;
-                }
-                return Err(AppError::GitError(format!("git commit failed: {}", stderr)));
-            }
-            Err(e) => return Err(AppError::GitError(format!("Failed to run git commit: {}", e))),
-        }
+        if commit_output.status.success() {
+            // Push
+            let push_output = self
+                .run_git_command_in_dir(&["push", "origin", branch], repo_dir)
+                .await?;
 
-        // Push
-        let push_output = self
-            .git_command()
-            .args(["push", "origin", branch])
-            .current_dir(repo_dir)
-            .output()
-            .await;
-
-        match push_output {
-            Ok(output) if output.status.success() => self.get_current_commit(repo_dir).await,
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
+            if push_output.status.success() {
+                self.get_current_commit(repo_dir).await
+            } else {
+                let stderr = String::from_utf8_lossy(&push_output.stderr);
                 Err(AppError::GitError(format!("git push failed: {}", stderr)))
             }
-            Err(e) => Err(AppError::GitError(format!("Failed to run git push: {}", e))),
+        } else {
+            let stdout = String::from_utf8_lossy(&commit_output.stdout);
+            let stderr = String::from_utf8_lossy(&commit_output.stderr);
+            // Check if there's nothing to commit
+            if stdout.contains("nothing to commit") || stderr.contains("nothing to commit") {
+                self.get_current_commit(repo_dir).await
+            } else {
+                Err(AppError::GitError(format!("git commit failed: {}", stderr)))
+            }
         }
     }
 
     /// Get the current commit SHA
     pub async fn get_current_commit(&self, repo_dir: &Path) -> Result<String> {
         let output = self
-            .git_command()
-            .args(["rev-parse", "HEAD"])
-            .current_dir(repo_dir)
-            .output()
-            .await;
+            .run_git_command_in_dir(&["rev-parse", "HEAD"], repo_dir)
+            .await?;
 
-        match output {
-            Ok(output) if output.status.success() => {
-                let sha = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                Ok(sha)
-            }
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Err(AppError::GitError(format!("Failed to get commit SHA: {}", stderr)))
-            }
-            Err(e) => Err(AppError::GitError(format!("Failed to run git rev-parse: {}", e))),
+        if output.status.success() {
+            let sha = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok(sha)
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            Err(AppError::GitError(format!("Failed to get commit SHA: {}", stderr)))
         }
     }
 
@@ -634,22 +570,16 @@ impl GitOperations {
     /// Get the remote commit SHA without fetching
     pub async fn get_remote_commit(&self, repo_url: &str, branch: &str) -> Result<String> {
         let output = self
-            .git_command()
-            .args(["ls-remote", repo_url, &format!("refs/heads/{}", branch)])
-            .output()
-            .await;
+            .run_git_command(&["ls-remote", repo_url, &format!("refs/heads/{}", branch)])
+            .await?;
 
-        match output {
-            Ok(output) if output.status.success() => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let sha = stdout.split_whitespace().next().map(|s| s.to_string());
-                sha.ok_or_else(|| AppError::GitError("Could not parse remote commit SHA".to_string()))
-            }
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Err(AppError::GitError(format!("Failed to get remote commit: {}", stderr)))
-            }
-            Err(e) => Err(AppError::GitError(format!("Failed to run git ls-remote: {}", e))),
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let sha = stdout.split_whitespace().next().map(|s| s.to_string());
+            sha.ok_or_else(|| AppError::GitError("Could not parse remote commit SHA".to_string()))
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            Err(AppError::GitError(format!("Failed to get remote commit: {}", stderr)))
         }
     }
 
