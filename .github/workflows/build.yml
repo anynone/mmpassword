@@ -9,6 +9,9 @@ on:
     types: [created]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -130,7 +133,6 @@ jobs:
         with:
           files: |
             artifacts/**/*.dmg
-            artifacts/**/*.app
             artifacts/**/*.exe
             artifacts/**/*.msi
             artifacts/**/*.deb
