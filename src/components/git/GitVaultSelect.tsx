@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { Loader2, Folder, LockOpen, Plus, Circle, CircleDot } from "lucide-react"
 import { useToast } from "../common/Toast"
+import { useTranslation } from "@/i18n"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -15,6 +16,7 @@ interface GitVaultSelectProps {
 
 export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreateVault }: GitVaultSelectProps) {
   const { showToast } = useToast()
+  const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(true)
   const [vaultFiles, setVaultFiles] = useState<string[]>([])
   const [mode, setMode] = useState<"select" | "create">("select")
@@ -35,7 +37,7 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
       if (files.length > 0) { setMode("select"); setSelectedVault(files[0]) }
       else { setMode("create") }
     } catch (error) {
-      showToast("error", `Failed to list vaults: ${error}`)
+      showToast("error", t("gitVault.error.listFailed", { error }))
       setMode("create")
     } finally {
       setIsLoading(false)
@@ -43,18 +45,18 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
   }
 
   const handleOpenVault = () => {
-    if (!selectedVault) { showToast("error", "Please select a vault"); return }
-    if (!password) { showToast("error", "Please enter your password"); return }
+    if (!selectedVault) { showToast("error", t("gitVault.error.selectVault")); return }
+    if (!password) { showToast("error", t("gitVault.error.enterPassword")); return }
     setIsSubmitting(true)
     onOpenVault(selectedVault, password)
   }
 
   const handleCreateVault = () => {
-    if (!vaultName.trim()) { showToast("error", "Please enter a vault name"); return }
-    if (!customVaultPath.trim()) { showToast("error", "Please enter a vault filename"); return }
-    if (!password) { showToast("error", "Please enter a password"); return }
-    if (password !== confirmPassword) { showToast("error", "Passwords do not match"); return }
-    if (password.length < 8) { showToast("error", "Password must be at least 8 characters"); return }
+    if (!vaultName.trim()) { showToast("error", t("gitVault.error.enterVaultName")); return }
+    if (!customVaultPath.trim()) { showToast("error", t("gitVault.error.enterVaultFilename")); return }
+    if (!password) { showToast("error", t("gitVault.error.enterPassword")); return }
+    if (password !== confirmPassword) { showToast("error", t("gitVault.error.passwordMismatch")); return }
+    if (password.length < 8) { showToast("error", t("gitVault.error.passwordLength")); return }
     setIsSubmitting(true)
     const vaultPath = customVaultPath.endsWith(".mmp") ? customVaultPath : `${customVaultPath}.mmp`
     onCreateVault(vaultPath, vaultName, password)
@@ -67,7 +69,7 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-8">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="mt-2 text-sm text-muted-foreground">Scanning repository for vaults...</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("gitVault.scanning")}</p>
         </div>
       ) : (
         <>
@@ -85,12 +87,15 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
             <div className="space-y-3">
               <div className="p-3 bg-primary/10 rounded-lg">
                 <p className="text-sm">
-                  Found {vaultFiles.length} vault{vaultFiles.length > 1 ? "s" : ""} in the repository. Select one to open or create a new vault.
+                  {t("gitVault.foundVaults", {
+                    count: vaultFiles.length,
+                    plural: vaultFiles.length > 1 ? "s" : ""
+                  })}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium">Available Vaults:</label>
+                <label className="text-xs font-medium">{t("gitVault.availableVaults")}</label>
                 {vaultFiles.map((vaultPath) => (
                   <button
                     key={vaultPath}
@@ -116,12 +121,12 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
 
               {selectedVault && (
                 <div>
-                  <label className="text-xs font-medium">Master Password:</label>
+                  <label className="text-xs font-medium">{t("gitVault.masterPassword")}</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your master password"
+                    placeholder={t("gitVault.enterPassword")}
                     className="w-full mt-1 px-3 py-2 bg-card rounded-lg text-sm border focus:border-primary focus:outline-none"
                   />
                 </div>
@@ -129,11 +134,11 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
 
               <Button onClick={handleOpenVault} disabled={isSubmitting || !selectedVault || !password} className="w-full">
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LockOpen className="h-4 w-4 mr-2" />}
-                {isSubmitting ? "Unlocking..." : "Unlock Vault"}
+                {isSubmitting ? t("gitVault.unlocking") : t("gitVault.unlockVault")}
               </Button>
 
               <button onClick={() => setMode("create")} className="w-full text-sm text-primary hover:underline">
-                Create a new vault instead
+                {t("gitVault.createInstead")}
               </button>
             </div>
           )}
@@ -143,13 +148,13 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
               {vaultFiles.length === 0 && (
                 <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                   <p className="text-sm text-orange-800 dark:text-orange-300">
-                    No vaults found in this repository. Create a new vault to get started.
+                    {t("gitVault.noVaults")}
                   </p>
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-medium">Vault Filename:</label>
+                <label className="text-xs font-medium">{t("gitVault.vaultFilename")}</label>
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
@@ -160,11 +165,11 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
                   />
                   <span className="text-sm text-muted-foreground">.mmp</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">This will be the file path in the repository</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("gitVault.vaultPathHint")}</p>
               </div>
 
               <div>
-                <label className="text-xs font-medium">Vault Name:</label>
+                <label className="text-xs font-medium">{t("gitVault.vaultName")}</label>
                 <input
                   type="text"
                   value={vaultName}
@@ -172,27 +177,27 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
                   placeholder="My Vault"
                   className="w-full mt-1 px-3 py-2 bg-card rounded-lg text-sm border focus:border-primary focus:outline-none"
                 />
-                <p className="text-xs text-muted-foreground mt-1">This is the display name for your vault</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("gitVault.vaultNameHint")}</p>
               </div>
 
               <div>
-                <label className="text-xs font-medium">Master Password:</label>
+                <label className="text-xs font-medium">{t("gitVault.masterPassword")}</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a strong password"
+                  placeholder={t("gitVault.createPassword")}
                   className="w-full mt-1 px-3 py-2 bg-card rounded-lg text-sm border focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium">Confirm Password:</label>
+                <label className="text-xs font-medium">{t("gitVault.confirmPassword")}</label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your password"
+                  placeholder={t("gitVault.confirmPassword")}
                   className="w-full mt-1 px-3 py-2 bg-card rounded-lg text-sm border focus:border-primary focus:outline-none"
                 />
               </div>
@@ -203,12 +208,12 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
                 className="w-full"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-                {isSubmitting ? "Creating..." : "Create Vault"}
+                {isSubmitting ? t("gitVault.creating") : t("gitVault.createVault")}
               </Button>
 
               {vaultFiles.length > 0 && (
                 <button onClick={() => setMode("select")} className="w-full text-sm text-primary hover:underline">
-                  Open existing vault instead
+                  {t("gitVault.openExisting")}
                 </button>
               )}
             </div>
