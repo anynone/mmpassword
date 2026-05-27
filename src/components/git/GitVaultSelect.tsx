@@ -37,7 +37,7 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
       if (files.length > 0) { setMode("select"); setSelectedVault(files[0]) }
       else { setMode("create") }
     } catch (error) {
-      showToast("error", t("gitVault.error.listFailed", { error }))
+      showToast("error", t("gitVault.error.listFailed", { error: String(error) }))
       setMode("create")
     } finally {
       setIsLoading(false)
