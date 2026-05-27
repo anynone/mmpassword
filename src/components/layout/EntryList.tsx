@@ -3,6 +3,7 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { Search, Plus, Key, Copy, Pencil, Trash2, Code, Mail, Tag, Users, Landmark, ShoppingCart, SearchX, Type } from "lucide-react"
 import type { Entry } from "../../types"
 import { useVaultStore } from "../../stores/vaultStore"
+import { useSettingsStore } from "../../stores/settingsStore"
 import { Button } from "@/components/ui/button"
 import {
   ContextMenu,
@@ -30,12 +31,14 @@ export function EntryList({
   const { startEditing, startCreating, selectEntry, cancelEditing, isEditingActive, saveCurrentEditing, virtualEntry, renameEntry, updateFormData, editingState } = useVaultStore()
   const { showToast } = useToast()
   const { t } = useTranslation()
+  const { clipboardClearSeconds } = useSettingsStore()
 
   const [searchQuery, setSearchQuery] = useState("")
   const [renamingEntryId, setRenamingEntryId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState("")
   const renameInputRef = useRef<HTMLInputElement>(null)
   const newEntryInputRef = useRef<HTMLInputElement>(null)
+  const clipboardTimeoutRef = useRef<number | null>(null)
   const [newEntryTitle, setNewEntryTitle] = useState("New Entry")
   const [isEditingNewTitle, setIsEditingNewTitle] = useState(false)
   const [confirmState, setConfirmState] = useState<{
@@ -91,6 +94,13 @@ export function EntryList({
     if (field?.value) {
       await writeText(field.value)
       showToast("success", t("entryList.usernameCopied"))
+      // Clear previous timeout and set new one
+      if (clipboardTimeoutRef.current) {
+        clearTimeout(clipboardTimeoutRef.current)
+      }
+      clipboardTimeoutRef.current = setTimeout(async () => {
+        await writeText("")
+      }, clipboardClearSeconds * 1000)
     }
   }
 
@@ -99,6 +109,13 @@ export function EntryList({
     if (field?.value) {
       await writeText(field.value)
       showToast("success", t("entryList.passwordCopied"))
+      // Clear previous timeout and set new one
+      if (clipboardTimeoutRef.current) {
+        clearTimeout(clipboardTimeoutRef.current)
+      }
+      clipboardTimeoutRef.current = setTimeout(async () => {
+        await writeText("")
+      }, clipboardClearSeconds * 1000)
     }
   }
 
@@ -142,6 +159,15 @@ export function EntryList({
       newEntryInputRef.current.select()
     }
   }, [isEditingNewTitle])
+
+  // Cleanup clipboard timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clipboardTimeoutRef.current) {
+        clearTimeout(clipboardTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleFinishNewTitle = () => {
     setIsEditingNewTitle(false)
