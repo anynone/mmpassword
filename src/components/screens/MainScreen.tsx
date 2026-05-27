@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { confirm } from "@tauri-apps/plugin-dialog"
 import { listen } from "@tauri-apps/api/event"
 import { useVaultStore } from "../../stores/vaultStore"
+import { useSettingsStore } from "../../stores/settingsStore"
 import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout"
 import { GroupDialog } from "../group"
 import { SettingsModal, AboutSettings } from "../settings"
@@ -19,6 +20,7 @@ export function MainScreen({ onLock }: MainScreenProps) {
   // Auto-lock on idle
   useAutoLock();
 
+  const clipboardTimeoutRef = useRef<number | null>(null);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -43,6 +45,7 @@ export function MainScreen({ onLock }: MainScreenProps) {
 
   const { showToast } = useToast();
   const { t } = useTranslation();
+  const { clipboardClearSeconds } = useSettingsStore();
 
   // Load data
   useEffect(() => {
@@ -77,6 +80,15 @@ export function MainScreen({ onLock }: MainScreenProps) {
       useVaultStore.getState().clearSyncError();
     }
   }, [syncError, showToast, t]);
+
+  // Cleanup clipboard timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clipboardTimeoutRef.current) {
+        clearTimeout(clipboardTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const loadData = async () => {
     await Promise.all([getEntries(), getGroups()]);
@@ -118,6 +130,13 @@ export function MainScreen({ onLock }: MainScreenProps) {
   const handleCopyFieldFromDetail = async (fieldName: string, value: string) => {
     await writeText(value);
     showToast("success", t("entryDetail.copiedToClipboard", { field: fieldName }));
+    // Clear previous timeout and set new one
+    if (clipboardTimeoutRef.current) {
+      clearTimeout(clipboardTimeoutRef.current);
+    }
+    clipboardTimeoutRef.current = setTimeout(async () => {
+      await writeText("");
+    }, clipboardClearSeconds * 1000);
   };
 
   // Group actions

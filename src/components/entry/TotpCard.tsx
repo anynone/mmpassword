@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Shield, Copy, Pencil, Trash2 } from "lucide-react"
 import { invoke } from "@tauri-apps/api/core"
+import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import type { Entry } from "../../types"
 import { TotpCountdown } from "./TotpCountdown"
 import { TotpSetupDialog } from "./TotpSetupDialog"
 import { ConfirmDialog } from "../common/ConfirmDialog"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
+import { useSettingsStore } from "../../stores/settingsStore"
 
 interface TotpCardProps {
   entry: Entry
@@ -21,6 +23,7 @@ interface TotpCode {
 export function TotpCard({ entry, onEntryUpdated }: TotpCardProps) {
   const { showToast } = useToast()
   const { t } = useTranslation()
+  const { clipboardClearSeconds } = useSettingsStore()
 
   const [totpCode, setTotpCode] = useState<string | null>(null)
   const [countdown, setCountdown] = useState<number>(0)
@@ -28,6 +31,7 @@ export function TotpCard({ entry, onEntryUpdated }: TotpCardProps) {
   const [showSetup, setShowSetup] = useState(false)
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const fetchingRef = useRef(false)
+  const clipboardTimeoutRef = useRef<number | null>(null)
 
   const fetchCode = useCallback(async () => {
     if (!entry.totpSecret || fetchingRef.current) return
@@ -72,11 +76,27 @@ export function TotpCard({ entry, onEntryUpdated }: TotpCardProps) {
     }
   }, [entry.id, entry.totpSecret, fetchCode])
 
+  // Cleanup clipboard timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clipboardTimeoutRef.current) {
+        clearTimeout(clipboardTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const handleCopy = async () => {
     if (!totpCode) return
     try {
-      await navigator.clipboard.writeText(totpCode)
+      await writeText(totpCode)
       showToast("success", t("totp.copied"))
+      // Clear previous timeout and set new one
+      if (clipboardTimeoutRef.current) {
+        clearTimeout(clipboardTimeoutRef.current)
+      }
+      clipboardTimeoutRef.current = setTimeout(async () => {
+        await writeText("")
+      }, clipboardClearSeconds * 1000)
     } catch {
       showToast("error", "Failed to copy")
     }
