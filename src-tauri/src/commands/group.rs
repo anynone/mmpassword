@@ -32,25 +32,25 @@ fn get_local_vault_path(state: &State<'_, AppState>) -> Option<std::path::PathBu
     })
 }
 
-/// Helper function to save vault - handles both local and Git vaults
+/// Helper function to save vault - handles both local and Git vaults.
+/// Returns the (possibly merged) vault so callers can update the session.
 async fn save_vault_changes(
     state: &State<'_, AppState>,
     vault: &crate::models::Vault,
     key: &[u8; 32],
     salt: &[u8; 16],
     commit_message: &str,
-) -> Result<()> {
-    // Check if this is a Git vault (extract info before any await)
+) -> Result<crate::models::Vault> {
     if let Some((repository, clone_dir)) = get_git_sync_info(state) {
-        // Git vault - save through GitSyncEngine
         let engine = GitSyncEngine::new(repository, clone_dir);
-        engine.save_vault(vault, key, salt, Some(commit_message)).await?;
+        let (_sha, merged) = engine.save_vault(vault, key, salt, Some(commit_message)).await?;
+        Ok(merged)
     } else if let Some(path) = get_local_vault_path(state) {
-        // Local vault - save to file
         save_vault_file_with_key(&path, vault, key, salt)?;
+        Ok(vault.clone())
+    } else {
+        Ok(vault.clone())
     }
-
-    Ok(())
 }
 
 /// Get all groups
@@ -109,7 +109,15 @@ pub async fn create_group(
     };
 
     // Save vault changes
-    save_vault_changes(&state, &vault, &key, &salt, "Create group").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Create group").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(group)
 }
@@ -146,7 +154,15 @@ pub async fn update_group(
     };
 
     // Save vault changes
-    save_vault_changes(&state, &vault, &key, &salt, "Update group").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Update group").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(group)
 }
@@ -176,7 +192,15 @@ pub async fn delete_group(
     };
 
     // Save vault changes
-    save_vault_changes(&state, &vault, &key, &salt, "Delete group").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Delete group").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(())
 }

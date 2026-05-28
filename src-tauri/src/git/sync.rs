@@ -6,7 +6,7 @@ use sha2::{Digest, Sha256};
 
 use crate::error::{AppError, Result};
 use crate::models::Vault;
-use crate::storage::{create_vault_file_with_key, open_vault_file_with_key};
+use crate::storage::{create_vault_file_with_key, open_vault_file_with_key, open_vault_file_with_key_raw};
 use super::operations::GitOperations;
 use super::repository::{GitRepository, GitSyncState, SyncStatus};
 
@@ -145,20 +145,41 @@ impl GitSyncEngine {
         open_vault_file_with_key(&vault_path, password)
     }
 
-    /// Save vault to the repository
+    /// Save vault to the repository with pull-before-push to avoid conflicts.
+    ///
+    /// 1. Pull remote changes
+    /// 2. If remote changed, merge entries (prefer newest `updated_at`)
+    /// 3. Write merged vault, commit and push
+    /// 4. Return (commit_sha, merged_vault)
     pub async fn save_vault(
         &self,
         vault: &Vault,
         key: &[u8; 32],
         salt: &[u8; 16],
         commit_message: Option<&str>,
-    ) -> Result<String> {
-        // Ensure repository is cloned
+    ) -> Result<(String, Vault)> {
         self.ensure_cloned().await?;
+
+        // Pull remote changes before writing
+        let pre_pull_commit = self.get_current_commit().await.ok();
+        let _ = self.pull().await;
+        let post_pull_commit = self.get_current_commit().await.ok();
+
+        // Merge with remote if it changed
+        let mut merged = vault.clone();
+        let remote_changed = pre_pull_commit.as_ref() != post_pull_commit.as_ref();
+        if remote_changed {
+            let vault_path = self.vault_path();
+            if let Ok((remote_vault, _, _)) =
+                open_vault_file_with_key_raw(&vault_path, key, salt)
+            {
+                Self::merge_vaults(&mut merged, &remote_vault);
+            }
+        }
 
         // Write vault file
         let vault_path = self.vault_path();
-        create_vault_file_with_key(&vault_path, vault, key, salt)?;
+        create_vault_file_with_key(&vault_path, &merged, key, salt)?;
 
         // Commit and push
         let message = commit_message.unwrap_or("Update vault");
@@ -172,7 +193,45 @@ impl GitSyncEngine {
             )
             .await?;
 
-        Ok(new_sha)
+        Ok((new_sha, merged))
+    }
+
+    /// Merge remote entries into local vault.
+    /// - Entries only in remote: add them.
+    /// - Entries in both: keep whichever has the newer `updated_at`.
+    /// - Entries only in local: keep them.
+    /// - Groups from remote that are missing locally: add them.
+    fn merge_vaults(local: &mut Vault, remote: &Vault) {
+        // Merge entries
+        for remote_entry in &remote.entries {
+            if let Some(local_entry) = local.get_entry_mut(remote_entry.id) {
+                if remote_entry.updated_at > local_entry.updated_at {
+                    *local_entry = remote_entry.clone();
+                }
+            } else {
+                local.add_entry(remote_entry.clone());
+            }
+        }
+
+        // Merge groups
+        let local_group_ids: std::collections::HashSet<_> =
+            local.groups.iter().map(|g| g.id).collect();
+        for remote_group in &remote.groups {
+            if !local_group_ids.contains(&remote_group.id) {
+                local.add_group(remote_group.clone());
+            }
+        }
+
+        // Merge trash
+        let local_trash_ids: std::collections::HashSet<_> =
+            local.trash.iter().map(|e| e.id).collect();
+        for remote_entry in &remote.trash {
+            if !local_trash_ids.contains(&remote_entry.id) {
+                local.trash.push(remote_entry.clone());
+            }
+        }
+
+        local.touch();
     }
 
     /// Pull changes from remote
@@ -222,81 +281,39 @@ impl GitSyncEngine {
         }
     }
 
-    /// Full sync: pull, merge, then push
+    /// Full sync: pull, merge, then push.
+    /// Delegates to `save_vault` which now handles pull-before-push internally.
     pub async fn sync(
         &self,
         local_vault: &mut Vault,
-        password: &str,
+        _password: &str,
         sync_state: &GitSyncState,
         key: &[u8; 32],
         salt: &[u8; 16],
     ) -> Result<GitSyncResult> {
-        // Calculate current local hash
         let current_local_hash = Self::calculate_vault_hash(local_vault);
         let local_changed = current_local_hash != sync_state.local_hash;
 
-        // Pull remote changes
-        let new_commit = self.pull().await?;
-        let remote_changed = new_commit != sync_state.last_commit_sha;
-
-        match (local_changed, remote_changed) {
-            (false, false) => {
-                // No changes
-                Ok(GitSyncResult::success(0, 0, 0, Some(new_commit)))
-            }
-            (true, false) => {
-                // Only local changed - push
-                let sha = self
-                    .save_vault(local_vault, key, salt, Some("Update vault"))
-                    .await?;
-                Ok(GitSyncResult::success(0, local_vault.entries.len(), 0, Some(sha)))
-            }
-            (false, true) => {
-                // Only remote changed - pull and update local
-                let (remote_vault, _, _) = self.open_vault(password).await?;
-                let entries_pulled = remote_vault.entries.len();
-                *local_vault = remote_vault;
-                Ok(GitSyncResult::success(entries_pulled, 0, 0, Some(new_commit)))
-            }
-            (true, true) => {
-                // Both changed - need to merge
-                let (remote_vault, _, _) = self.open_vault(password).await?;
-
-                // Simple merge strategy: prefer newest entries
-                let mut entries_pulled = 0;
-                let conflicts = 0;
-
-                for remote_entry in &remote_vault.entries {
-                    if let Some(local_entry) = local_vault.get_entry_mut(remote_entry.id) {
-                        // Entry exists in both - check for conflict
-                        if local_entry.updated_at != remote_entry.updated_at {
-                            if remote_entry.updated_at > local_entry.updated_at {
-                                *local_entry = remote_entry.clone();
-                                entries_pulled += 1;
-                            }
-                            // If local is newer, keep it
-                        }
-                    } else {
-                        // Entry only exists remotely - add it
-                        local_vault.add_entry(remote_entry.clone());
-                        entries_pulled += 1;
-                    }
-                }
-
-                // Push merged result
-                local_vault.touch();
-                let sha = self
-                    .save_vault(local_vault, key, salt, Some("Merge vault changes"))
-                    .await?;
-
-                Ok(GitSyncResult::success(
-                    entries_pulled,
-                    local_vault.entries.len(),
-                    conflicts,
-                    Some(sha),
-                ))
-            }
+        // save_vault does pull-merge-push; only skip when nothing changed at all
+        if !local_changed && sync_state.last_commit_sha == self.get_remote_commit().await? {
+            return Ok(GitSyncResult::success(0, 0, 0, Some(sync_state.last_commit_sha.clone())));
         }
+
+        let entry_count_before = local_vault.entries.len();
+
+        let (new_sha, merged) = self
+            .save_vault(local_vault, key, salt, Some("Sync vault"))
+            .await?;
+
+        let entries_pulled = merged.entries.len().saturating_sub(entry_count_before);
+        *local_vault = merged;
+
+        Ok(GitSyncResult::success(
+            entries_pulled,
+            local_vault.entries.len(),
+            0,
+            Some(new_sha),
+        ))
     }
 }
 
