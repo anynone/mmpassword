@@ -133,6 +133,42 @@ pub fn open_vault_file_with_key(path: &Path, password: &str) -> Result<(Vault, [
     Ok((vault, key, salt))
 }
 
+/// Open and decrypt a vault file using pre-derived key and salt (no password derivation)
+pub fn open_vault_file_with_key_raw(
+    path: &Path,
+    key: &[u8; 32],
+    salt: &[u8; 16],
+) -> Result<(Vault, [u8; 32], [u8; 16])> {
+    let file_data = std::fs::read(path)?;
+
+    if file_data.len() < HEADER_SIZE + SALT_SIZE + NONCE_SIZE + TAG_SIZE {
+        return Err(AppError::InvalidFileFormat);
+    }
+
+    // Parse header
+    let header = VaultHeader::from_bytes(&file_data[0..HEADER_SIZE])?;
+
+    // Check version
+    if header.version as u32 > VAULT_VERSION {
+        return Err(AppError::VersionMismatch(VAULT_VERSION, header.version as u32));
+    }
+
+    // Extract encrypted data (skip header + salt)
+    let encrypted_bytes = &file_data[HEADER_SIZE + SALT_SIZE..];
+
+    // Parse EncryptedData (contains nonce + ciphertext)
+    let encrypted = EncryptedData::from_bytes(encrypted_bytes)?;
+
+    // Decrypt using the provided key
+    let plaintext = decrypt(&encrypted, key)?;
+    let json_str = String::from_utf8(plaintext)
+        .map_err(|e| AppError::Decryption(format!("Invalid UTF-8: {}", e)))?;
+
+    let vault: Vault = serde_json::from_str(&json_str)?;
+
+    Ok((vault, *key, *salt))
+}
+
 /// Save changes to an existing vault file using pre-derived key
 pub fn save_vault_file_with_key(
     path: &Path,

@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { Lock, Settings, Info } from "lucide-react"
+import { Lock, Settings, Info, RefreshCw } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
+import { useSettingsStore } from "../../stores/settingsStore"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "../common/ConfirmDialog"
 import { AppHeader } from "./AppHeader"
@@ -17,6 +18,9 @@ export function TopNavBar({ onLock, onSettings, onAbout }: TopNavBarProps) {
   const isEditingActive = useVaultStore((state) => state.isEditingActive)
   const cancelEditing = useVaultStore((state) => state.cancelEditing)
   const saveCurrentEditing = useVaultStore((state) => state.saveCurrentEditing)
+  const pullGitVault = useVaultStore((state) => state.pullGitVault)
+  const isLoading = useVaultStore((state) => state.isLoading)
+  const lastGitVault = useSettingsStore((s) => s.lastGitVault)
 
   const { t } = useTranslation()
 
@@ -30,6 +34,14 @@ export function TopNavBar({ onLock, onSettings, onAbout }: TopNavBarProps) {
       setConfirmState({ isOpen: true, pendingAction: action })
     } else {
       action()
+    }
+  }
+
+  const handleRefresh = async () => {
+    if (isEditingActive()) {
+      setConfirmState({ isOpen: true, pendingAction: () => { pullGitVault() } })
+    } else {
+      await pullGitVault()
     }
   }
 
@@ -65,6 +77,18 @@ export function TopNavBar({ onLock, onSettings, onAbout }: TopNavBarProps) {
             onClick={() => guardAndNavigate(onLock)}
           >
             <Lock className="h-5 w-5" />
+          </Button>
+        )}
+        {isUnlocked && lastGitVault && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            title={t("topNav.refreshVault")}
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
         )}
         <Button
