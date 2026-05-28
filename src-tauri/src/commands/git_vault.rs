@@ -326,6 +326,57 @@ pub async fn get_git_sync_status(state: State<'_, AppState>) -> Result<Option<Gi
     Ok(None)
 }
 
+/// Pull vault from Git (fetch remote changes, decrypt, update session)
+#[tauri::command]
+pub async fn pull_git_vault(state: State<'_, AppState>) -> Result<Vault> {
+    // Extract needed data from session first to avoid holding lock across await
+    let (repository, key, salt) = {
+        let session = state.session.read();
+        let session = session.as_ref().ok_or(AppError::VaultLocked)?;
+
+        let git_sync = session
+            .git_sync
+            .as_ref()
+            .ok_or_else(|| AppError::GitError("Not a Git vault".to_string()))?;
+
+        (
+            git_sync.repository.clone(),
+            *session.key.as_bytes(),
+            session.salt,
+        )
+    };
+
+    let clone_dir = get_clone_dir(&repository.url)?;
+    let engine = GitSyncEngine::new(repository.clone(), clone_dir);
+
+    // Pull remote changes
+    let new_commit = engine.pull().await?;
+
+    // Re-open (decrypt) the vault from the updated clone using existing key
+    let vault_path = engine.vault_path();
+    let (vault, _, _) = crate::storage::open_vault_file_with_key_raw(&vault_path, &key, &salt)?;
+
+    let local_hash = GitSyncEngine::calculate_vault_hash(&vault);
+
+    // Update session with new vault and sync state
+    {
+        let mut session = state.session.write();
+        if let Some(session) = session.as_mut() {
+            session.vault = vault.clone();
+            session.dirty = false;
+            if let Some(ref mut git_sync) = session.git_sync {
+                git_sync.sync_state.last_commit_sha = new_commit;
+                git_sync.sync_state.local_hash = local_hash;
+                git_sync.sync_state.last_sync_at = chrono::Utc::now();
+            }
+        }
+    }
+
+    state.mark_clean();
+
+    Ok(vault)
+}
+
 /// Expand tilde in path
 fn expand_tilde(path: &str) -> PathBuf {
     if path.starts_with("~") {

@@ -103,6 +103,7 @@ interface VaultState {
   openGitVault: (repoUrl: string, branch: string, vaultPath: string, keyPath: string, password: string) => Promise<Vault>;
   syncGitVault: (password: string) => Promise<GitSyncResult>;
   saveGitVault: (commitMessage?: string) => Promise<string>;
+  pullGitVault: () => Promise<void>;
 
   // UI state
   selectEntry: (id: string | null) => void;
@@ -405,6 +406,21 @@ export const useVaultStore = create<VaultState>((set) => ({
     } catch (error) {
       set({ error: String(error), isLoading: false });
       throw error;
+    }
+  },
+
+  pullGitVault: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const vault = await invoke<Vault>("pull_git_vault");
+      set({
+        vault,
+        entries: vault.entries,
+        groups: vault.groups,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
     }
   },
 

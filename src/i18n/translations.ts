@@ -34,6 +34,7 @@ export const translations: Record<string, Record<string, string>> = {
 
     // TopNavBar
     "topNav.lockVault": "Lock Vault",
+    "topNav.refreshVault": "Refresh Vault",
     "topNav.settings": "Settings",
 
     // SideNavBar
@@ -269,6 +270,7 @@ export const translations: Record<string, Record<string, string>> = {
 
     // TopNavBar
     "topNav.lockVault": "锁定密码库",
+    "topNav.refreshVault": "刷新密码库",
     "topNav.settings": "设置",
 
     // SideNavBar

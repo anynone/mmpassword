@@ -154,6 +154,7 @@ pub fn run() {
             commands::git_vault::save_git_vault,
             commands::git_vault::sync_git_vault,
             commands::git_vault::get_git_sync_status,
+            commands::git_vault::pull_git_vault,
             // Git repo management commands
             commands::vault::get_recent_git_repos,
             commands::vault::add_recent_git_repo,
