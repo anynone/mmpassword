@@ -154,7 +154,7 @@ pub async fn create_git_vault(
     let key = derived_key.into_array()?;
 
     // Save to Git
-    let commit_sha = engine
+    let (commit_sha, _merged) = engine
         .save_vault(&vault, &key, &salt, Some(&format!("Create vault: {}", name)))
         .await?;
     let local_hash = GitSyncEngine::calculate_vault_hash(&vault);
@@ -196,7 +196,7 @@ pub async fn create_git_vault(
     Ok(vault)
 }
 
-/// Save vault to Git (commit + push)
+/// Save vault to Git (pull + merge + commit + push)
 #[tauri::command]
 pub async fn save_git_vault(
     state: State<'_, AppState>,
@@ -224,16 +224,17 @@ pub async fn save_git_vault(
     let engine = GitSyncEngine::new(repository, clone_dir);
 
     let message = commit_message.as_deref().unwrap_or("Update vault");
-    let new_sha = engine.save_vault(&vault, &key, &salt, Some(message)).await?;
+    let (new_sha, merged) = engine.save_vault(&vault, &key, &salt, Some(message)).await?;
 
-    // Update sync state
+    // Update session with merged vault and sync state
     {
         let mut session = state.session.write();
         if let Some(session) = session.as_mut() {
+            session.vault = merged;
+            session.dirty = false;
             if let Some(ref mut git_sync) = session.git_sync {
-                let local_hash = GitSyncEngine::calculate_vault_hash(&session.vault);
                 git_sync.sync_state.last_commit_sha = new_sha.clone();
-                git_sync.sync_state.local_hash = local_hash;
+                git_sync.sync_state.local_hash = GitSyncEngine::calculate_vault_hash(&session.vault);
                 git_sync.sync_state.last_sync_at = chrono::Utc::now();
             }
         }
@@ -272,7 +273,7 @@ pub async fn sync_git_vault(
     let clone_dir = get_clone_dir(&repository.url)?;
     let engine = GitSyncEngine::new(repository.clone(), clone_dir);
 
-    // Perform sync
+    // Perform sync (save_vault now handles pull-merge-push internally)
     let result = engine.sync(&mut vault, &password, &sync_state, &key, &salt).await?;
 
     // Update session with merged vault

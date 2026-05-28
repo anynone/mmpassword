@@ -126,7 +126,15 @@ pub async fn set_totp_secret(
     };
 
     // Save vault (follow Git Vault Save Pattern)
-    save_vault_changes(&state, &vault, &key, &salt, "Set TOTP secret").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Set TOTP secret").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(entry)
 }
@@ -161,7 +169,15 @@ pub async fn remove_totp_secret(
         )
     };
 
-    save_vault_changes(&state, &vault, &key, &salt, "Remove TOTP secret").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Remove TOTP secret").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(entry)
 }
@@ -191,23 +207,25 @@ fn get_local_vault_path(state: &State<'_, AppState>) -> Option<std::path::PathBu
     })
 }
 
-/// Helper: save vault changes (local or Git)
+/// Helper: save vault changes (local or Git).
+/// Returns the (possibly merged) vault so callers can update the session.
 async fn save_vault_changes(
     state: &State<'_, AppState>,
     vault: &crate::models::Vault,
     key: &[u8; 32],
     salt: &[u8; 16],
     commit_message: &str,
-) -> Result<()> {
+) -> Result<crate::models::Vault> {
     if let Some((repository, clone_dir)) = get_git_sync_info(state) {
         let engine = GitSyncEngine::new(repository, clone_dir);
-        engine
-            .save_vault(vault, key, salt, Some(commit_message))
-            .await?;
+        let (_sha, merged) = engine.save_vault(vault, key, salt, Some(commit_message)).await?;
+        Ok(merged)
     } else if let Some(path) = get_local_vault_path(state) {
         save_vault_file_with_key(&path, vault, key, salt)?;
+        Ok(vault.clone())
+    } else {
+        Ok(vault.clone())
     }
-    Ok(())
 }
 
 #[cfg(test)]

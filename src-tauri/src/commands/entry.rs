@@ -32,25 +32,25 @@ fn get_local_vault_path(state: &State<'_, AppState>) -> Option<std::path::PathBu
     })
 }
 
-/// Helper function to save vault - handles both local and Git vaults
+/// Helper function to save vault - handles both local and Git vaults.
+/// Returns the (possibly merged) vault so callers can update the session.
 async fn save_vault_changes(
     state: &State<'_, AppState>,
     vault: &crate::models::Vault,
     key: &[u8; 32],
     salt: &[u8; 16],
     commit_message: &str,
-) -> Result<()> {
-    // Check if this is a Git vault (extract info before any await)
+) -> Result<crate::models::Vault> {
     if let Some((repository, clone_dir)) = get_git_sync_info(state) {
-        // Git vault - save through GitSyncEngine
         let engine = GitSyncEngine::new(repository, clone_dir);
-        engine.save_vault(vault, key, salt, Some(commit_message)).await?;
+        let (_sha, merged) = engine.save_vault(vault, key, salt, Some(commit_message)).await?;
+        Ok(merged)
     } else if let Some(path) = get_local_vault_path(state) {
-        // Local vault - save to file
         save_vault_file_with_key(&path, vault, key, salt)?;
+        Ok(vault.clone())
+    } else {
+        Ok(vault.clone())
     }
-
-    Ok(())
 }
 
 /// Helper function to save vault changes with background Git sync.
@@ -68,16 +68,12 @@ fn save_vault_changes_background(
     commit_message: String,
 ) -> Result<()> {
     if let Some((repository, clone_dir)) = get_git_sync_info(state) {
-        // Git vault - run the save operation in a background task so
-        // the user sees the change applied immediately.
         let sync_lock = state.git_sync_lock.clone();
         let app_handle = app.clone();
 
         tauri::async_runtime::spawn(async move {
             let _ = app_handle.emit("sync:started", ());
 
-            // Serialize git operations so overlapping background saves
-            // don't step on each other inside the same clone.
             let _guard = sync_lock.lock().await;
 
             let engine = GitSyncEngine::new(repository, clone_dir);
@@ -85,7 +81,7 @@ fn save_vault_changes_background(
                 .save_vault(&vault, &key, &salt, Some(&commit_message))
                 .await
             {
-                Ok(_new_sha) => {
+                Ok((_new_sha, _merged)) => {
                     let _ = app_handle.emit("sync:completed", ());
                 }
                 Err(e) => {
@@ -94,7 +90,6 @@ fn save_vault_changes_background(
             }
         });
     } else if let Some(path) = get_local_vault_path(state) {
-        // Local vault - save synchronously (fast, no network I/O).
         save_vault_file_with_key(&path, &vault, &key, &salt)?;
     }
 
@@ -182,12 +177,13 @@ pub async fn create_entry(
     };
 
     // Save vault changes
-    save_vault_changes(&state, &vault, &key, &salt, "Add new entry").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Add new entry").await?;
 
-    // Mark as clean
+    // Update session with merged vault
     {
         let mut session = state.session.write();
         if let Some(s) = session.as_mut() {
+            s.vault = merged;
             s.dirty = false;
         }
     }
@@ -226,7 +222,15 @@ pub async fn update_entry(
     };
 
     // Save vault changes
-    save_vault_changes(&state, &vault, &key, &salt, "Update entry").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Update entry").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(entry)
 }
@@ -324,7 +328,15 @@ pub async fn delete_entry(
     };
 
     // Save vault changes
-    save_vault_changes(&state, &vault, &key, &salt, "Delete entry").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Delete entry").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(())
 }
@@ -365,7 +377,15 @@ pub async fn restore_entry(
     };
 
     // Save vault changes
-    save_vault_changes(&state, &vault, &key, &salt, "Restore entry").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Restore entry").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(())
 }
@@ -395,7 +415,15 @@ pub async fn delete_entry_permanently(
     };
 
     // Save vault changes
-    save_vault_changes(&state, &vault, &key, &salt, "Permanently delete entry").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Permanently delete entry").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(())
 }
@@ -419,7 +447,15 @@ pub async fn empty_trash(
     };
 
     // Save vault changes
-    save_vault_changes(&state, &vault, &key, &salt, "Empty trash").await?;
+    let merged = save_vault_changes(&state, &vault, &key, &salt, "Empty trash").await?;
+
+    // Update session with merged vault
+    {
+        let mut session = state.session.write();
+        if let Some(s) = session.as_mut() {
+            s.vault = merged;
+        }
+    }
 
     Ok(())
 }
