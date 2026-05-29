@@ -76,6 +76,9 @@ export const translations: Record<string, Record<string, string>> = {
     "entryDetail.lastModified": "Last Modified",
     "entryDetail.copiedToClipboard": "{field} copied to clipboard",
     "entryDetail.addField": "Add Field",
+    "entryDetail.fieldNamePlaceholder": "Field name",
+    "entryDetail.fieldValuePlaceholder": "Value",
+    "entryDetail.fieldNameRequired": "Please enter a field name, or delete the field.",
 
     // StatusBar
     "statusBar.secure": "Status: Secure",
@@ -312,6 +315,9 @@ export const translations: Record<string, Record<string, string>> = {
     "entryDetail.lastModified": "最后修改",
     "entryDetail.copiedToClipboard": "{field} 已复制到剪贴板",
     "entryDetail.addField": "添加字段",
+    "entryDetail.fieldNamePlaceholder": "字段名",
+    "entryDetail.fieldValuePlaceholder": "值",
+    "entryDetail.fieldNameRequired": "请填写字段名，或删除该字段。",
 
     // StatusBar
     "statusBar.secure": "状态：安全",
