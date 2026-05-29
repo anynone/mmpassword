@@ -34,6 +34,8 @@ interface InlineFieldProps {
   onGeneratePassword?: () => void
   passwordHistory?: PasswordHistoryEntry[]
   autoFocusName?: boolean
+  focusSignal?: number
+  errorMessage?: string
 }
 
 const formatFieldName = (name: string) => {
@@ -49,6 +51,8 @@ export function InlineField({
   onGeneratePassword,
   passwordHistory,
   autoFocusName = false,
+  focusSignal,
+  errorMessage,
 }: InlineFieldProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showGenerator, setShowGenerator] = useState(false)
@@ -59,13 +63,14 @@ export function InlineField({
   const { t } = useTranslation()
   const isPassword = field.fieldType === "password"
   const hasHistory = !isEditing && isPassword && passwordHistory && passwordHistory.length > 0
+  const hasNameError = Boolean(errorMessage)
   const maskPassword = (value: string) => "\u2022".repeat(value.length)
 
   useEffect(() => {
     if (isEditing && autoFocusName) {
       nameInputRef.current?.focus()
     }
-  }, [autoFocusName, isEditing])
+  }, [autoFocusName, focusSignal, isEditing])
 
   return (
     <div className="space-y-1">
@@ -80,7 +85,12 @@ export function InlineField({
               onChange={(e) => onChange("name", e.target.value)}
               placeholder={t("entryDetail.fieldNamePlaceholder")}
               className={cn(
-                "h-10 bg-transparent border-border/30 placeholder:normal-case placeholder:font-normal placeholder:tracking-normal",
+                "h-10 bg-transparent placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/60",
+                hasNameError
+                  ? "border-destructive focus-visible:ring-destructive"
+                  : field.name.trim()
+                    ? "border-border/30"
+                    : "border-dashed border-border/50",
                 field.name.trim()
                   ? "text-xs font-semibold uppercase tracking-wider"
                   : "text-sm font-normal normal-case tracking-normal"
@@ -212,6 +222,10 @@ export function InlineField({
           )}
         </div>
       </div>
+
+      {isEditing && errorMessage && (
+        <p className="ml-1 text-xs text-destructive">{errorMessage}</p>
+      )}
 
       {/* Password strength indicator in edit mode */}
       {isEditing && isPassword && field.value && (

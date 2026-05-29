@@ -32,6 +32,8 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
   const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null)
+  const [focusSignal, setFocusSignal] = useState(0)
+  const [invalidFieldIds, setInvalidFieldIds] = useState<string[]>([])
 
   const isEditing = editingState.mode === "editing"
   const isCreating = editingState.mode === "creating"
@@ -51,9 +53,14 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
       : []
 
   const validateFields = (fields: FieldInput[]) => {
-    const unnamedFieldWithValue = fields.find((f) => !f.name.trim() && f.value.trim())
-    if (unnamedFieldWithValue) {
-      showToast("error", t("entryDetail.fieldNameRequired"))
+    const invalidIds = fields
+      .filter((f) => !f.name.trim() && f.value.trim())
+      .map((f) => f.id)
+
+    setInvalidFieldIds(invalidIds)
+    if (invalidIds.length > 0) {
+      setFocusedFieldId(invalidIds[0])
+      setFocusSignal((signal) => signal + 1)
       return false
     }
     return true
@@ -156,6 +163,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
     const newFields = formData.fields.map((f, i) =>
       i === index ? { ...f, [key]: value } : f
     )
+    setInvalidFieldIds((ids) => ids.filter((id) => id !== formData.fields[index]?.id))
     updateFormData({ fields: newFields })
   }
 
@@ -166,10 +174,12 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
       fields: [...formData.fields, { id: fieldId, name: "", value: "", fieldType: "text" as FieldType }],
     })
     setFocusedFieldId(fieldId)
+    setFocusSignal((signal) => signal + 1)
   }
 
   const removeField = (index: number) => {
     if (!formData) return
+    setInvalidFieldIds((ids) => ids.filter((id) => id !== formData.fields[index]?.id))
     updateFormData({ fields: formData.fields.filter((_, i) => i !== index) })
   }
 
@@ -265,6 +275,12 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
               onGeneratePassword={() => {}}
               passwordHistory={!isActive && entry ? entry.fields[index]?.passwordHistory : undefined}
               autoFocusName={field.id === focusedFieldId}
+              focusSignal={focusSignal}
+              errorMessage={
+                invalidFieldIds.includes(field.id)
+                  ? t("entryDetail.fieldNameRequired")
+                  : undefined
+              }
             />
           ))}
 
