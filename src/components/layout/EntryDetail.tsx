@@ -33,7 +33,6 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
   const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null)
   const [focusSignal, setFocusSignal] = useState(0)
-  const [invalidFieldIds, setInvalidFieldIds] = useState<string[]>([])
 
   const isEditing = editingState.mode === "editing"
   const isCreating = editingState.mode === "creating"
@@ -52,20 +51,6 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
         }))
       : []
 
-  const validateFields = (fields: FieldInput[]) => {
-    const invalidIds = fields
-      .filter((f) => !f.name.trim() && f.value.trim())
-      .map((f) => f.id)
-
-    setInvalidFieldIds(invalidIds)
-    if (invalidIds.length > 0) {
-      setFocusedFieldId(invalidIds[0])
-      setFocusSignal((signal) => signal + 1)
-      return false
-    }
-    return true
-  }
-
   const handleSaveEdit = async () => {
     if (!formData || editingState.mode !== "editing") return
     setIsSubmitting(true)
@@ -74,11 +59,10 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
         showToast("error", t("entryDetail.titleRequired"))
         return
       }
-      if (!validateFields(formData.fields)) return
       const entryFields = formData.fields
-        .filter((f) => f.name.trim() && f.value.trim())
+        .filter((f) => f.value.trim())
         .map((f) => ({
-          name: f.name.trim(),
+          name: f.name.trim() || "NAME",
           value: f.value,
           fieldType: f.fieldType,
           protected: f.fieldType === "password",
@@ -107,11 +91,10 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
         showToast("error", t("entryDetail.titleRequired"))
         return
       }
-      if (!validateFields(formData.fields)) return
       const entryFields = formData.fields
-        .filter((f) => f.name.trim() && f.value.trim())
+        .filter((f) => f.value.trim())
         .map((f) => ({
-          name: f.name.trim(),
+          name: f.name.trim() || "NAME",
           value: f.value,
           fieldType: f.fieldType,
           protected: f.fieldType === "password",
@@ -163,7 +146,6 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
     const newFields = formData.fields.map((f, i) =>
       i === index ? { ...f, [key]: value } : f
     )
-    setInvalidFieldIds((ids) => ids.filter((id) => id !== formData.fields[index]?.id))
     updateFormData({ fields: newFields })
   }
 
@@ -179,7 +161,6 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
 
   const removeField = (index: number) => {
     if (!formData) return
-    setInvalidFieldIds((ids) => ids.filter((id) => id !== formData.fields[index]?.id))
     updateFormData({ fields: formData.fields.filter((_, i) => i !== index) })
   }
 
@@ -276,11 +257,6 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
               passwordHistory={!isActive && entry ? entry.fields[index]?.passwordHistory : undefined}
               autoFocusName={field.id === focusedFieldId}
               focusSignal={focusSignal}
-              errorMessage={
-                invalidFieldIds.includes(field.id)
-                  ? t("entryDetail.fieldNameRequired")
-                  : undefined
-              }
             />
           ))}
 
