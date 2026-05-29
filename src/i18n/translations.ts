@@ -36,6 +36,15 @@ export const translations: Record<string, Record<string, string>> = {
     "topNav.lockVault": "Lock Vault",
     "topNav.refreshVault": "Refresh Vault",
     "topNav.settings": "Settings",
+    "topNav.searchVault": "Search Vault",
+    "topNav.searchPlaceholder": "Search the entire vault...",
+    "topNav.searchHint": "Type a keyword to search all entries.",
+    "topNav.search.noResults": "No matching entries found",
+    "topNav.search.matchTitle": "Title match",
+    "topNav.search.matchField": "Field: {field}",
+    "topNav.search.matchFieldValue": "Field value match",
+    "topNav.search.matchGroup": "Group: {group}",
+    "topNav.search.matchTag": "Tag match",
 
     // SideNavBar
     "sideNav.groups": "Groups",
@@ -275,6 +284,15 @@ export const translations: Record<string, Record<string, string>> = {
     "topNav.lockVault": "锁定密码库",
     "topNav.refreshVault": "刷新密码库",
     "topNav.settings": "设置",
+    "topNav.searchVault": "搜索密码库",
+    "topNav.searchPlaceholder": "搜索整个密码库...",
+    "topNav.searchHint": "输入关键字搜索所有条目。",
+    "topNav.search.noResults": "未找到匹配条目",
+    "topNav.search.matchTitle": "标题匹配",
+    "topNav.search.matchField": "字段：{field}",
+    "topNav.search.matchFieldValue": "字段值匹配",
+    "topNav.search.matchGroup": "分组：{group}",
+    "topNav.search.matchTag": "标签匹配",
 
     // SideNavBar
     "sideNav.groups": "分组",
