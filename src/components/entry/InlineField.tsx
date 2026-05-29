@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Copy, Eye, EyeOff, KeyRound, Trash2, History } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ import { PasswordGeneratorPanel } from "./PasswordGeneratorPanel"
 import type { FieldType, PasswordHistoryEntry } from "../../types"
 import type { FieldInput } from "../../stores/vaultStore"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "../../i18n"
 
 export const fieldTypeOptions = [
   { value: "text", label: "Text" },
@@ -32,6 +33,7 @@ interface InlineFieldProps {
   onCopy?: (fieldName: string, value: string) => void
   onGeneratePassword?: () => void
   passwordHistory?: PasswordHistoryEntry[]
+  autoFocusName?: boolean
 }
 
 const formatFieldName = (name: string) => {
@@ -46,15 +48,24 @@ export function InlineField({
   onCopy,
   onGeneratePassword,
   passwordHistory,
+  autoFocusName = false,
 }: InlineFieldProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showGenerator, setShowGenerator] = useState(false)
   const [expandedHistory, setExpandedHistory] = useState(false)
   const [revealedHistory, setRevealedHistory] = useState<Record<number, boolean>>({})
+  const nameInputRef = useRef<HTMLInputElement>(null)
   const generatorBtnRef = useRef<HTMLButtonElement>(null)
+  const { t } = useTranslation()
   const isPassword = field.fieldType === "password"
   const hasHistory = !isEditing && isPassword && passwordHistory && passwordHistory.length > 0
   const maskPassword = (value: string) => "\u2022".repeat(value.length)
+
+  useEffect(() => {
+    if (isEditing && autoFocusName) {
+      nameInputRef.current?.focus()
+    }
+  }, [autoFocusName, isEditing])
 
   return (
     <div className="space-y-1">
@@ -64,10 +75,16 @@ export function InlineField({
         <div className="w-28 flex-shrink-0">
           {isEditing ? (
             <Input
+              ref={nameInputRef}
               value={field.name}
               onChange={(e) => onChange("name", e.target.value)}
-              placeholder="Name"
-              className="h-10 text-xs font-semibold uppercase tracking-wider bg-transparent border-border/30"
+              placeholder={t("entryDetail.fieldNamePlaceholder")}
+              className={cn(
+                "h-10 bg-transparent border-border/30 placeholder:normal-case placeholder:font-normal placeholder:tracking-normal",
+                field.name.trim()
+                  ? "text-xs font-semibold uppercase tracking-wider"
+                  : "text-sm font-normal normal-case tracking-normal"
+              )}
             />
           ) : (
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 leading-10 block truncate">
@@ -102,7 +119,7 @@ export function InlineField({
                 type={isPassword && !showPassword ? "password" : "text"}
                 value={field.value}
                 onChange={(e) => onChange("value", e.target.value)}
-                placeholder="Value"
+                placeholder={t("entryDetail.fieldValuePlaceholder")}
                 className={cn(
                   "h-10 bg-accent/50 border-border/30",
                   isPassword && "pr-20"

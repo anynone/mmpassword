@@ -31,6 +31,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+  const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null)
 
   const isEditing = editingState.mode === "editing"
   const isCreating = editingState.mode === "creating"
@@ -49,6 +50,15 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
         }))
       : []
 
+  const validateFields = (fields: FieldInput[]) => {
+    const unnamedFieldWithValue = fields.find((f) => !f.name.trim() && f.value.trim())
+    if (unnamedFieldWithValue) {
+      showToast("error", t("entryDetail.fieldNameRequired"))
+      return false
+    }
+    return true
+  }
+
   const handleSaveEdit = async () => {
     if (!formData || editingState.mode !== "editing") return
     setIsSubmitting(true)
@@ -57,6 +67,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
         showToast("error", t("entryDetail.titleRequired"))
         return
       }
+      if (!validateFields(formData.fields)) return
       const entryFields = formData.fields
         .filter((f) => f.name.trim() && f.value.trim())
         .map((f) => ({
@@ -89,6 +100,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
         showToast("error", t("entryDetail.titleRequired"))
         return
       }
+      if (!validateFields(formData.fields)) return
       const entryFields = formData.fields
         .filter((f) => f.name.trim() && f.value.trim())
         .map((f) => ({
@@ -149,9 +161,11 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
 
   const addField = () => {
     if (!formData) return
+    const fieldId = crypto.randomUUID()
     updateFormData({
-      fields: [...formData.fields, { id: crypto.randomUUID(), name: "", value: "", fieldType: "text" as FieldType }],
+      fields: [...formData.fields, { id: fieldId, name: "", value: "", fieldType: "text" as FieldType }],
     })
+    setFocusedFieldId(fieldId)
   }
 
   const removeField = (index: number) => {
@@ -250,6 +264,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
               onCopy={onCopyField}
               onGeneratePassword={() => {}}
               passwordHistory={!isActive && entry ? entry.fields[index]?.passwordHistory : undefined}
+              autoFocusName={field.id === focusedFieldId}
             />
           ))}
 
