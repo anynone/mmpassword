@@ -131,9 +131,9 @@ export function EntryEditForm({
       }
 
       const entryFields: Field[] = fields
-        .filter((f) => f.name.trim() && f.value.trim())
+        .filter((f) => f.value.trim())
         .map((f) => ({
-          name: f.name.trim(),
+          name: f.name.trim() || "NAME",
           value: f.value,
           fieldType: f.fieldType,
           protected: f.fieldType === "password",
