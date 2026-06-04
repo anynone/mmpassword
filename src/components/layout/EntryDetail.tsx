@@ -11,6 +11,8 @@ import { TotpCard } from "../entry/TotpCard"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
 import { getDefaultFieldName } from "@/lib/fieldDefaults"
+import { createFieldBatch, type FieldBatchUnit } from "@/lib/fieldBatch"
+import { BulkAddFieldButton } from "../entry/BulkAddFieldButton"
 
 interface EntryDetailProps {
   entry: Entry | null
@@ -150,13 +152,14 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
     updateFormData({ fields: newFields })
   }
 
-  const addField = () => {
+  const addFields = (quantity = 1, unit: FieldBatchUnit = "row") => {
     if (!formData) return
-    const fieldId = crypto.randomUUID()
+    const newFields = createFieldBatch(quantity, unit)
+    const firstFieldId = newFields[0]?.id
     updateFormData({
-      fields: [...formData.fields, { id: fieldId, name: "", value: "", fieldType: "text" as FieldType }],
+      fields: [...formData.fields, ...newFields],
     })
-    setFocusedFieldId(fieldId)
+    setFocusedFieldId(firstFieldId ?? null)
     setFocusSignal((signal) => signal + 1)
   }
 
@@ -262,16 +265,11 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
           ))}
 
           {isActive && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
+            <BulkAddFieldButton
               className="text-muted-foreground"
-              onClick={addField}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              {t("entryDetail.addField")}
-            </Button>
+              placement="top"
+              onAdd={addFields}
+            />
           )}
         </div>
 
