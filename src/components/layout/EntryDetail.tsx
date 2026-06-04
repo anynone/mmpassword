@@ -11,7 +11,7 @@ import { TotpCard } from "../entry/TotpCard"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
 import { getDefaultFieldName } from "@/lib/fieldDefaults"
-import { createFieldBatch, type FieldBatchUnit } from "@/lib/fieldBatch"
+import { createFieldBatch, reorderItems, type FieldBatchUnit } from "@/lib/fieldBatch"
 import { BulkAddFieldButton } from "../entry/BulkAddFieldButton"
 
 interface EntryDetailProps {
@@ -27,6 +27,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
     updateFormData,
     createEntry,
     updateEntry,
+    groups,
   } = useVaultStore()
 
   const { showToast } = useToast()
@@ -36,11 +37,16 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
   const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null)
   const [focusSignal, setFocusSignal] = useState(0)
+  const [draggingFieldId, setDraggingFieldId] = useState<string | null>(null)
+  const [dragOverFieldId, setDragOverFieldId] = useState<string | null>(null)
 
   const isEditing = editingState.mode === "editing"
   const isCreating = editingState.mode === "creating"
   const isActive = isEditing || isCreating
   const formData = isActive ? editingState.currentData : null
+  const currentGroupName = entry?.groupId
+    ? groups.find((group) => group.id === entry.groupId)?.name
+    : undefined
 
   // Build field list from either formData (edit/create) or entry (view)
   const displayFields: FieldInput[] = isActive && formData
@@ -168,6 +174,13 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
     updateFormData({ fields: formData.fields.filter((_, i) => i !== index) })
   }
 
+  const reorderField = (targetIndex: number, draggedFieldId: string) => {
+    if (!formData) return
+    const fromIndex = formData.fields.findIndex((field) => field.id === draggedFieldId)
+    if (fromIndex < 0) return
+    updateFormData({ fields: reorderItems(formData.fields, fromIndex, targetIndex) })
+  }
+
   // No entry selected and not creating
   if (!entry && !isCreating) {
     return (
@@ -196,8 +209,10 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="font-headline font-bold text-lg truncate">{isCreating ? (formData?.title || t("entryDetail.newEntry")) : entry?.title ?? ""}</h2>
-            {!isCreating && entry?.groupId && (
-              <p className="text-xs text-muted-foreground truncate">{t("entryDetail.inGroup")}</p>
+            {!isCreating && currentGroupName && (
+              <p className="text-xs text-muted-foreground truncate">
+                {t("entryDetail.inGroup", { group: currentGroupName })}
+              </p>
             )}
           </div>
         </div>
@@ -261,6 +276,30 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
               passwordHistory={!isActive && entry ? entry.fields[index]?.passwordHistory : undefined}
               autoFocusName={field.id === focusedFieldId}
               focusSignal={focusSignal}
+              draggable={isActive}
+              isDragging={field.id === draggingFieldId}
+              isDragOver={field.id === dragOverFieldId}
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = "move"
+                event.dataTransfer.setData("text/plain", field.id)
+                setDraggingFieldId(field.id)
+              }}
+              onDragOver={(event) => {
+                event.preventDefault()
+                event.dataTransfer.dropEffect = "move"
+                setDragOverFieldId(field.id)
+              }}
+              onDrop={(event) => {
+                event.preventDefault()
+                const draggedFieldId = event.dataTransfer.getData("text/plain")
+                reorderField(index, draggedFieldId)
+                setDraggingFieldId(null)
+                setDragOverFieldId(null)
+              }}
+              onDragEnd={() => {
+                setDraggingFieldId(null)
+                setDragOverFieldId(null)
+              }}
             />
           ))}
 

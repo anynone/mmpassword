@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Trash2, KeyRound } from "lucide-react"
+import { Trash2, KeyRound, GripVertical } from "lucide-react"
 import { Modal } from "../common/Modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,10 +15,12 @@ import {
 import { PasswordStrengthIndicator } from "../common/PasswordStrengthIndicator"
 import { useVaultStore } from "../../stores/vaultStore"
 import { useToast } from "../common/Toast"
+import { useTranslation } from "../../i18n"
 import type { Entry, Field, FieldType, EntryType } from "../../types"
 import { getDefaultFieldName } from "@/lib/fieldDefaults"
-import { createFieldBatch, type FieldBatchUnit } from "@/lib/fieldBatch"
+import { createFieldBatch, reorderItems, type FieldBatchUnit } from "@/lib/fieldBatch"
 import { BulkAddFieldButton } from "./BulkAddFieldButton"
+import { cn } from "@/lib/utils"
 
 interface EntryEditFormProps {
   isOpen: boolean
@@ -63,6 +65,7 @@ export function EntryEditForm({
 }: EntryEditFormProps) {
   const { createEntry, updateEntry, groups } = useVaultStore()
   const { showToast } = useToast()
+  const { t } = useTranslation()
 
   const [title, setTitle] = useState("")
   const [entryType, setEntryType] = useState<EntryType>("websiteLogin")
@@ -70,6 +73,8 @@ export function EntryEditForm({
   const [fields, setFields] = useState<FieldInput[]>(defaultFields)
   const [favorite, setFavorite] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [draggingFieldId, setDraggingFieldId] = useState<string | null>(null)
+  const [dragOverFieldId, setDragOverFieldId] = useState<string | null>(null)
 
   const isEditMode = !!entry
 
@@ -111,6 +116,13 @@ export function EntryEditForm({
     setFields(
       fields.map((f, i) => (i === index ? { ...f, [key]: value } : f))
     )
+  }
+
+  const reorderField = (targetIndex: number, draggedFieldId: string) => {
+    setFields((currentFields) => {
+      const fromIndex = currentFields.findIndex((field) => field.id === draggedFieldId)
+      return reorderItems(currentFields, fromIndex, targetIndex)
+    })
   }
 
   const generatePassword = (index: number) => {
@@ -255,7 +267,43 @@ export function EntryEditForm({
           </div>
 
           {fields.map((field, index) => (
-            <div key={field.id} className="flex items-start gap-2">
+            <div
+              key={field.id}
+              className={cn(
+                "flex items-start gap-2 rounded-md transition-colors",
+                draggingFieldId === field.id && "opacity-50",
+                dragOverFieldId === field.id && draggingFieldId !== field.id && "bg-primary/5 ring-1 ring-primary/30"
+              )}
+              onDragOver={(event) => {
+                event.preventDefault()
+                event.dataTransfer.dropEffect = "move"
+                setDragOverFieldId(field.id)
+              }}
+              onDrop={(event) => {
+                event.preventDefault()
+                reorderField(index, event.dataTransfer.getData("text/plain"))
+                setDraggingFieldId(null)
+                setDragOverFieldId(null)
+              }}
+            >
+              <button
+                type="button"
+                draggable
+                aria-label={t("entryDetail.dragField")}
+                title={t("entryDetail.dragField")}
+                className="h-10 w-6 flex-shrink-0 cursor-grab rounded-md text-muted-foreground hover:bg-accent hover:text-foreground active:cursor-grabbing"
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = "move"
+                  event.dataTransfer.setData("text/plain", field.id)
+                  setDraggingFieldId(field.id)
+                }}
+                onDragEnd={() => {
+                  setDraggingFieldId(null)
+                  setDragOverFieldId(null)
+                }}
+              >
+                <GripVertical className="mx-auto h-4 w-4" />
+              </button>
               <div className="flex-1 grid grid-cols-12 gap-2">
                 <div className="col-span-3">
                   <Input

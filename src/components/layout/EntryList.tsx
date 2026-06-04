@@ -23,6 +23,15 @@ interface EntryListProps {
   onDeleteEntry: (entry: Entry) => void
 }
 
+const normalizeFieldName = (name: string) => name.trim().toLowerCase()
+
+const findEntryFieldValue = (entry: Entry, fieldType: "username" | "password" | "url") => {
+  const field = entry.fields.find((f) => (
+    f.fieldType === fieldType || normalizeFieldName(f.name) === fieldType
+  ))
+  return field?.value
+}
+
 export function EntryList({
   entries,
   selectedEntryId,
@@ -90,9 +99,9 @@ export function EntryList({
   }
 
   const handleCopyUsername = async (entry: Entry) => {
-    const field = entry.fields.find((f) => f.name.toLowerCase() === "username")
-    if (field?.value) {
-      await writeText(field.value)
+    const username = findEntryFieldValue(entry, "username")
+    if (username) {
+      await writeText(username)
       showToast("success", t("entryList.usernameCopied"))
       // Clear previous timeout and set new one
       if (clipboardTimeoutRef.current) {
@@ -105,9 +114,9 @@ export function EntryList({
   }
 
   const handleCopyPassword = async (entry: Entry) => {
-    const field = entry.fields.find((f) => f.name.toLowerCase() === "password")
-    if (field?.value) {
-      await writeText(field.value)
+    const password = findEntryFieldValue(entry, "password")
+    if (password) {
+      await writeText(password)
       showToast("success", t("entryList.passwordCopied"))
       // Clear previous timeout and set new one
       if (clipboardTimeoutRef.current) {
@@ -177,7 +186,7 @@ export function EntryList({
   }
 
   const getEntryIcon = (entry: Entry) => {
-    const url = entry.fields.find((f) => f.name === "url")?.value?.toLowerCase() || ""
+    const url = findEntryFieldValue(entry, "url")?.toLowerCase() || ""
     const title = entry.title.toLowerCase()
 
     if (url.includes("github") || title.includes("github")) return Code
@@ -274,6 +283,7 @@ export function EntryList({
         ) : (
           filteredEntries.map((entry) => {
             const EntryIcon = getEntryIcon(entry)
+            const username = findEntryFieldValue(entry, "username")
             return (
               <ContextMenu key={entry.id}>
                 <ContextMenuTrigger asChild>
@@ -320,7 +330,7 @@ export function EntryList({
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
-                        {entry.fields.find((f) => f.name === "username")?.value || t("entryList.noUsername")}
+                        {username || t("entryList.noUsername")}
                       </p>
                     </div>
                   </button>
