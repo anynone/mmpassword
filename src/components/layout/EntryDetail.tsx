@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type PointerEvent as ReactPointerEvent } from "react"
 import { Plus, Pencil, Key, MousePointerClick } from "lucide-react"
 import type { Entry } from "../../types"
 import type { FieldType } from "../../types"
@@ -12,6 +12,7 @@ import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
 import { getDefaultFieldName } from "@/lib/fieldDefaults"
 import { createFieldBatch, reorderItems, type FieldBatchUnit } from "@/lib/fieldBatch"
+import { getFieldDragTargetId, lockPageWhileDragging } from "@/lib/fieldDrag"
 import { BulkAddFieldButton } from "../entry/BulkAddFieldButton"
 
 interface EntryDetailProps {
@@ -174,11 +175,60 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
     updateFormData({ fields: formData.fields.filter((_, i) => i !== index) })
   }
 
-  const reorderField = (targetIndex: number, draggedFieldId: string) => {
-    if (!formData) return
-    const fromIndex = formData.fields.findIndex((field) => field.id === draggedFieldId)
-    if (fromIndex < 0) return
-    updateFormData({ fields: reorderItems(formData.fields, fromIndex, targetIndex) })
+  const reorderField = (targetFieldId: string, draggedFieldId: string) => {
+    const state = useVaultStore.getState()
+    if (state.editingState.mode === "viewing") return
+
+    const currentFields = state.editingState.currentData.fields
+    const fromIndex = currentFields.findIndex((field) => field.id === draggedFieldId)
+    const targetIndex = currentFields.findIndex((field) => field.id === targetFieldId)
+    if (fromIndex < 0 || targetIndex < 0 || fromIndex === targetIndex) return
+
+    state.updateFormData({ fields: reorderItems(currentFields, fromIndex, targetIndex) })
+  }
+
+  const startFieldDrag = (
+    fieldId: string,
+    event: ReactPointerEvent<HTMLButtonElement>
+  ) => {
+    if (event.button !== 0) return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    setDraggingFieldId(fieldId)
+    setDragOverFieldId(fieldId)
+
+    const unlockPage = lockPageWhileDragging()
+    let animationFrame = 0
+
+    const stopDragging = () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame)
+      unlockPage()
+      window.removeEventListener("pointermove", handlePointerMove)
+      window.removeEventListener("pointerup", stopDragging)
+      window.removeEventListener("pointercancel", stopDragging)
+      setDraggingFieldId(null)
+      setDragOverFieldId(null)
+    }
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      moveEvent.preventDefault()
+
+      if (animationFrame) return
+      animationFrame = requestAnimationFrame(() => {
+        animationFrame = 0
+        const targetFieldId = getFieldDragTargetId(moveEvent.clientX, moveEvent.clientY)
+        if (!targetFieldId) return
+
+        setDragOverFieldId(targetFieldId)
+        reorderField(targetFieldId, fieldId)
+      })
+    }
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: false })
+    window.addEventListener("pointerup", stopDragging)
+    window.addEventListener("pointercancel", stopDragging)
   }
 
   // No entry selected and not creating
@@ -279,27 +329,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
               draggable={isActive}
               isDragging={field.id === draggingFieldId}
               isDragOver={field.id === dragOverFieldId}
-              onDragStart={(event) => {
-                event.dataTransfer.effectAllowed = "move"
-                event.dataTransfer.setData("text/plain", field.id)
-                setDraggingFieldId(field.id)
-              }}
-              onDragOver={(event) => {
-                event.preventDefault()
-                event.dataTransfer.dropEffect = "move"
-                setDragOverFieldId(field.id)
-              }}
-              onDrop={(event) => {
-                event.preventDefault()
-                const draggedFieldId = event.dataTransfer.getData("text/plain")
-                reorderField(index, draggedFieldId)
-                setDraggingFieldId(null)
-                setDragOverFieldId(null)
-              }}
-              onDragEnd={() => {
-                setDraggingFieldId(null)
-                setDragOverFieldId(null)
-              }}
+              onDragHandlePointerDown={(event) => startFieldDrag(field.id, event)}
             />
           ))}
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, type PointerEvent as ReactPointerEvent } from "react"
 import { Trash2, KeyRound, GripVertical } from "lucide-react"
 import { Modal } from "../common/Modal"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import { useTranslation } from "../../i18n"
 import type { Entry, Field, FieldType, EntryType } from "../../types"
 import { getDefaultFieldName } from "@/lib/fieldDefaults"
 import { createFieldBatch, reorderItems, type FieldBatchUnit } from "@/lib/fieldBatch"
+import { getFieldDragTargetId, lockPageWhileDragging } from "@/lib/fieldDrag"
 import { BulkAddFieldButton } from "./BulkAddFieldButton"
 import { cn } from "@/lib/utils"
 
@@ -118,11 +119,56 @@ export function EntryEditForm({
     )
   }
 
-  const reorderField = (targetIndex: number, draggedFieldId: string) => {
+  const reorderField = (targetFieldId: string, draggedFieldId: string) => {
     setFields((currentFields) => {
       const fromIndex = currentFields.findIndex((field) => field.id === draggedFieldId)
+      const targetIndex = currentFields.findIndex((field) => field.id === targetFieldId)
       return reorderItems(currentFields, fromIndex, targetIndex)
     })
+  }
+
+  const startFieldDrag = (
+    fieldId: string,
+    event: ReactPointerEvent<HTMLButtonElement>
+  ) => {
+    if (event.button !== 0) return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    setDraggingFieldId(fieldId)
+    setDragOverFieldId(fieldId)
+
+    const unlockPage = lockPageWhileDragging()
+    let animationFrame = 0
+
+    const stopDragging = () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame)
+      unlockPage()
+      window.removeEventListener("pointermove", handlePointerMove)
+      window.removeEventListener("pointerup", stopDragging)
+      window.removeEventListener("pointercancel", stopDragging)
+      setDraggingFieldId(null)
+      setDragOverFieldId(null)
+    }
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      moveEvent.preventDefault()
+
+      if (animationFrame) return
+      animationFrame = requestAnimationFrame(() => {
+        animationFrame = 0
+        const targetFieldId = getFieldDragTargetId(moveEvent.clientX, moveEvent.clientY)
+        if (!targetFieldId) return
+
+        setDragOverFieldId(targetFieldId)
+        reorderField(targetFieldId, fieldId)
+      })
+    }
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: false })
+    window.addEventListener("pointerup", stopDragging)
+    window.addEventListener("pointercancel", stopDragging)
   }
 
   const generatePassword = (index: number) => {
@@ -269,38 +315,19 @@ export function EntryEditForm({
           {fields.map((field, index) => (
             <div
               key={field.id}
+              data-field-drag-id={field.id}
               className={cn(
                 "flex items-start gap-2 rounded-md transition-colors",
                 draggingFieldId === field.id && "opacity-50",
                 dragOverFieldId === field.id && draggingFieldId !== field.id && "bg-primary/5 ring-1 ring-primary/30"
               )}
-              onDragOver={(event) => {
-                event.preventDefault()
-                event.dataTransfer.dropEffect = "move"
-                setDragOverFieldId(field.id)
-              }}
-              onDrop={(event) => {
-                event.preventDefault()
-                reorderField(index, event.dataTransfer.getData("text/plain"))
-                setDraggingFieldId(null)
-                setDragOverFieldId(null)
-              }}
             >
               <button
                 type="button"
-                draggable
                 aria-label={t("entryDetail.dragField")}
                 title={t("entryDetail.dragField")}
-                className="h-10 w-6 flex-shrink-0 cursor-grab rounded-md text-muted-foreground hover:bg-accent hover:text-foreground active:cursor-grabbing"
-                onDragStart={(event) => {
-                  event.dataTransfer.effectAllowed = "move"
-                  event.dataTransfer.setData("text/plain", field.id)
-                  setDraggingFieldId(field.id)
-                }}
-                onDragEnd={() => {
-                  setDraggingFieldId(null)
-                  setDragOverFieldId(null)
-                }}
+                className="h-10 w-6 flex-shrink-0 cursor-grab touch-none select-none rounded-md text-muted-foreground hover:bg-accent hover:text-foreground active:cursor-grabbing"
+                onPointerDown={(event) => startFieldDrag(field.id, event)}
               >
                 <GripVertical className="mx-auto h-4 w-4" />
               </button>

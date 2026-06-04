@@ -1,6 +1,6 @@
 [package]
 name = "mmpassword"
-version = "0.1.15"
+version = "0.1.16"
 description = "A secure local password manager"
 authors = ["mmpassword"]
 edition = "2021"
