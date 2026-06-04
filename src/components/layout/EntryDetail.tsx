@@ -10,6 +10,7 @@ import { InlineField } from "../entry/InlineField"
 import { TotpCard } from "../entry/TotpCard"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
+import { getDefaultFieldName } from "@/lib/fieldDefaults"
 
 interface EntryDetailProps {
   entry: Entry | null
@@ -62,7 +63,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
       const entryFields = formData.fields
         .filter((f) => f.value.trim())
         .map((f) => ({
-          name: f.name.trim() || "NAME",
+          name: f.name.trim() || getDefaultFieldName(f.fieldType),
           value: f.value,
           fieldType: f.fieldType,
           protected: f.fieldType === "password",
@@ -94,7 +95,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
       const entryFields = formData.fields
         .filter((f) => f.value.trim())
         .map((f) => ({
-          name: f.name.trim() || "NAME",
+          name: f.name.trim() || getDefaultFieldName(f.fieldType),
           value: f.value,
           fieldType: f.fieldType,
           protected: f.fieldType === "password",
