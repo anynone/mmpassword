@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Plus, Trash2, KeyRound } from "lucide-react"
+import { Trash2, KeyRound } from "lucide-react"
 import { Modal } from "../common/Modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,8 @@ import { useVaultStore } from "../../stores/vaultStore"
 import { useToast } from "../common/Toast"
 import type { Entry, Field, FieldType, EntryType } from "../../types"
 import { getDefaultFieldName } from "@/lib/fieldDefaults"
+import { createFieldBatch, type FieldBatchUnit } from "@/lib/fieldBatch"
+import { BulkAddFieldButton } from "./BulkAddFieldButton"
 
 interface EntryEditFormProps {
   isOpen: boolean
@@ -94,10 +96,10 @@ export function EntryEditForm({
     }
   }, [entry, defaultGroupId, isOpen])
 
-  const addField = () => {
-    setFields([
-      ...fields,
-      { id: crypto.randomUUID(), name: "", value: "", fieldType: "text", isNew: true },
+  const addFields = (quantity = 1, unit: FieldBatchUnit = "row") => {
+    setFields((currentFields) => [
+      ...currentFields,
+      ...createFieldBatch(quantity, unit),
     ])
   }
 
@@ -249,10 +251,7 @@ export function EntryEditForm({
             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
               Fields
             </Label>
-            <Button type="button" variant="ghost" size="sm" onClick={addField}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Field
-            </Button>
+            <BulkAddFieldButton onAdd={addFields} />
           </div>
 
           {fields.map((field, index) => (
