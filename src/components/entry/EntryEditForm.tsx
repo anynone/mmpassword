@@ -16,6 +16,7 @@ import { PasswordStrengthIndicator } from "../common/PasswordStrengthIndicator"
 import { useVaultStore } from "../../stores/vaultStore"
 import { useToast } from "../common/Toast"
 import type { Entry, Field, FieldType, EntryType } from "../../types"
+import { getDefaultFieldName } from "@/lib/fieldDefaults"
 
 interface EntryEditFormProps {
   isOpen: boolean
@@ -133,7 +134,7 @@ export function EntryEditForm({
       const entryFields: Field[] = fields
         .filter((f) => f.value.trim())
         .map((f) => ({
-          name: f.name.trim() || "NAME",
+          name: f.name.trim() || getDefaultFieldName(f.fieldType),
           value: f.value,
           fieldType: f.fieldType,
           protected: f.fieldType === "password",

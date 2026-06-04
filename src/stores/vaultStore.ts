@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import type { Vault, VaultMeta, Group, Entry, Field, FieldType, EntryType, CreateEntryRequest, UpdateEntryRequest } from "../types";
 import type { GitSyncResult, DetectedSshKey, SshKeyValidation, GitAccessValidation } from "../types/git";
+import { getDefaultFieldName } from "../lib/fieldDefaults";
 
 // --- Editing state types ---
 
@@ -515,7 +516,7 @@ export const useVaultStore = create<VaultState>((set) => ({
     const entryFields: Field[] = formData.fields
       .filter((f) => f.value.trim())
       .map((f) => ({
-        name: f.name.trim() || "NAME",
+        name: f.name.trim() || getDefaultFieldName(f.fieldType),
         value: f.value,
         fieldType: f.fieldType,
         protected: f.fieldType === "password",
