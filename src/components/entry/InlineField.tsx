@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react"
-import { Copy, Eye, EyeOff, KeyRound, Trash2, History } from "lucide-react"
+import { type DragEvent, useEffect, useState, useRef } from "react"
+import { Copy, Eye, EyeOff, KeyRound, Trash2, History, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -36,6 +36,13 @@ interface InlineFieldProps {
   autoFocusName?: boolean
   focusSignal?: number
   errorMessage?: string
+  draggable?: boolean
+  isDragging?: boolean
+  isDragOver?: boolean
+  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void
+  onDragOver?: (event: DragEvent<HTMLDivElement>) => void
+  onDrop?: (event: DragEvent<HTMLDivElement>) => void
+  onDragEnd?: () => void
 }
 
 const formatFieldName = (name: string) => {
@@ -53,6 +60,13 @@ export function InlineField({
   autoFocusName = false,
   focusSignal,
   errorMessage,
+  draggable = false,
+  isDragging = false,
+  isDragOver = false,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: InlineFieldProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showGenerator, setShowGenerator] = useState(false)
@@ -73,9 +87,30 @@ export function InlineField({
   }, [autoFocusName, focusSignal, isEditing])
 
   return (
-    <div className="space-y-1">
+    <div
+      className={cn(
+        "space-y-1 rounded-md transition-colors",
+        isDragging && "opacity-50",
+        isDragOver && !isDragging && "bg-primary/5 ring-1 ring-primary/30"
+      )}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
       {/* Single row: label/name + value + actions — same structure in both modes */}
       <div className="flex items-center gap-2">
+        {isEditing && draggable && (
+          <button
+            type="button"
+            draggable
+            aria-label={t("entryDetail.dragField")}
+            title={t("entryDetail.dragField")}
+            className="h-10 w-6 flex-shrink-0 cursor-grab rounded-md text-muted-foreground hover:bg-accent hover:text-foreground active:cursor-grabbing"
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+          >
+            <GripVertical className="mx-auto h-4 w-4" />
+          </button>
+        )}
         {/* Left: field name & type */}
         <div className="w-28 flex-shrink-0">
           {isEditing ? (
