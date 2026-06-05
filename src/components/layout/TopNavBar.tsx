@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Lock, Settings, Info, RefreshCw, Search, SearchX, Folder } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
-import { useSettingsStore } from "../../stores/settingsStore"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "../common/ConfirmDialog"
 import { AppHeader } from "./AppHeader"
@@ -25,7 +24,8 @@ export function TopNavBar({ onLock, onSettings, onAbout }: TopNavBarProps) {
   const saveCurrentEditing = useVaultStore((state) => state.saveCurrentEditing)
   const pullGitVault = useVaultStore((state) => state.pullGitVault)
   const isLoading = useVaultStore((state) => state.isLoading)
-  const lastGitVault = useSettingsStore((s) => s.lastGitVault)
+  const currentVaultTarget = useVaultStore((state) => state.currentVaultTarget)
+  const canRefreshVault = currentVaultTarget?.type === "git"
 
   const { t } = useTranslation()
   const { showToast } = useToast()
@@ -241,7 +241,7 @@ export function TopNavBar({ onLock, onSettings, onAbout }: TopNavBarProps) {
             <Lock className="h-5 w-5" />
           </Button>
         )}
-        {isUnlocked && lastGitVault && (
+        {isUnlocked && canRefreshVault && (
           <Button
             variant="ghost"
             size="icon"
