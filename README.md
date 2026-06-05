@@ -5,7 +5,7 @@
 A secure, free, and open-source password manager. \
 Your passwords stay on your device — encrypted, always.
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#)
 
 [Download](#download) · [Build from Source](#build-from-source) · [Report Bug](https://github.com/anynone/mmpassword/issues) · [Request Feature](https://github.com/anynone/mmpassword/issues)
@@ -22,7 +22,7 @@ Your passwords stay on your device — encrypted, always.
 - **Proven cryptography** — Argon2id for key derivation, ChaCha20-Poly1305 for encryption. The same algorithms trusted by security professionals worldwide.
 - **Optional Git sync** — Sync your vault through a private Git repository. Full version history, conflict resolution included.
 - **Cross-platform** — Native desktop app for Windows, macOS, and Linux.
-- **Free forever** — No subscriptions, no ads, no tracking. Fully open-source under MIT license.
+- **Free forever** — No subscriptions, no ads, no tracking. Open-source under the Apache License 2.0.
 
 ---
 
@@ -63,9 +63,11 @@ Your passwords stay on your device — encrypted, always.
 
 ### Password Generator
 
-- Generate strong 16-character passwords
-- Includes uppercase, lowercase, digits, and special characters
-- Built into the password field editor
+- Configurable password length from 4 to 64 characters, with 16 as the default
+- Choose uppercase letters, lowercase letters, digits, and special characters
+- Uses cryptographically secure randomness
+- Ensures every enabled character type appears at least once
+- Built into the password field editor for one-click generation
 
 ### Search
 
@@ -144,4 +146,4 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 
 ## License
 
-[MIT](LICENSE)
+mmpassword is licensed under the [Apache License 2.0](LICENSE).

@@ -5,7 +5,7 @@
 安全、免费、开源的密码管理器。\
 你的密码，只留在你身边 — 始终加密。
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#)
 
 [下载](#下载) · [从源码构建](#从源码构建) · [反馈问题](https://github.com/anynone/mmpassword/issues) · [功能建议](https://github.com/anynone/mmpassword/issues)
@@ -22,7 +22,7 @@
 - **业界认可的加密算法** — Argon2id 密钥派生 + ChaCha20-Poly1305 加密，全球安全专家信赖的算法组合
 - **可选 Git 同步** — 通过私有 Git 仓库同步保险库，自带完整版本历史和冲突解决
 - **跨平台** — Windows、macOS、Linux 原生桌面应用
-- **永久免费** — 无订阅、无广告、无追踪，MIT 开源协议
+- **永久免费** — 无订阅、无广告、无追踪，采用 Apache License 2.0 开源协议
 
 ---
 
@@ -134,12 +134,10 @@ npm run tauri:build
 
 ---
 
----
-
 ## 参与贡献
 
 欢迎贡献！随时提交 Issue 或 Pull Request。
 
 ## 许可证
 
-[MIT](LICENSE)
+mmpassword 采用 [Apache License 2.0](LICENSE) 开源协议。
