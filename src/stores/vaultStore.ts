@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import type { Vault, VaultMeta, Group, Entry, Field, FieldType, EntryType, CreateEntryRequest, UpdateEntryRequest } from "../types";
+import type { Vault, VaultMeta, Group, Entry, Field, FieldType, EntryType, CreateEntryRequest, UpdateEntryRequest, LastGitVault, VaultOpenTarget } from "../types";
 import type { GitSyncResult, DetectedSshKey, SshKeyValidation, GitAccessValidation } from "../types/git";
 import { getDefaultFieldName } from "../lib/fieldDefaults";
 
@@ -60,9 +60,31 @@ const entryToFormData = (entry: Entry): EntryFormData => ({
   })),
 });
 
+const extractRepoName = (repoUrl: string): string => {
+  const trimmed = repoUrl.trim().replace(/\.git$/i, "");
+  const path = trimmed.startsWith("git@")
+    ? trimmed.split(":").pop() || trimmed
+    : trimmed;
+  return path.split(/[\\/]/).pop() || "Unknown";
+};
+
+const buildLastGitVault = (
+  repoUrl: string,
+  branch: string,
+  vaultPath: string,
+  keyPath: string
+): LastGitVault => ({
+  repoUrl,
+  branch,
+  vaultPath,
+  keyPath,
+  repoName: extractRepoName(repoUrl),
+});
+
 interface VaultState {
   // State
   vault: Vault | null;
+  currentVaultTarget: VaultOpenTarget | null;
   entries: Entry[];
   groups: Group[];
   isLocked: boolean;
@@ -133,6 +155,7 @@ interface VaultState {
 export const useVaultStore = create<VaultState>((set) => ({
   // Initial state
   vault: null,
+  currentVaultTarget: null,
   entries: [],
   groups: [],
   isLocked: true,
@@ -152,6 +175,7 @@ export const useVaultStore = create<VaultState>((set) => ({
       const vault = await invoke<Vault>("create_vault", { name, password, path });
       set({
         vault,
+        currentVaultTarget: { type: "local", path },
         entries: vault.entries,
         groups: vault.groups,
         isLocked: false,
@@ -170,6 +194,7 @@ export const useVaultStore = create<VaultState>((set) => ({
       const vault = await invoke<Vault>("unlock_vault", { path, password });
       set({
         vault,
+        currentVaultTarget: { type: "local", path },
         entries: vault.entries,
         groups: vault.groups,
         isLocked: false,
@@ -354,6 +379,10 @@ export const useVaultStore = create<VaultState>((set) => ({
       const vault = await invoke<Vault>("create_git_vault", { repoUrl, branch, vaultPath, keyPath, name, password });
       set({
         vault,
+        currentVaultTarget: {
+          type: "git",
+          vault: buildLastGitVault(repoUrl, branch, vaultPath, keyPath),
+        },
         entries: vault.entries,
         groups: vault.groups,
         isLocked: false,
@@ -373,6 +402,10 @@ export const useVaultStore = create<VaultState>((set) => ({
       const vault = await invoke<Vault>("open_git_vault", { repoUrl, branch, vaultPath, keyPath, password });
       set({
         vault,
+        currentVaultTarget: {
+          type: "git",
+          vault: buildLastGitVault(repoUrl, branch, vaultPath, keyPath),
+        },
         entries: vault.entries,
         groups: vault.groups,
         isLocked: false,

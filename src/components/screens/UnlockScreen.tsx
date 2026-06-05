@@ -4,12 +4,10 @@ import { useVaultStore } from "../../stores/vaultStore"
 import { AppHeader, AppFooter } from "../layout"
 import { Button } from "@/components/ui/button"
 import { useTranslation } from "../../i18n"
-import type { LastGitVault } from "../../types"
+import type { VaultOpenTarget } from "../../types"
 
 /** Discriminated union describing which vault the unlock screen should open. */
-export type PendingVault =
-  | { type: "local"; path: string }
-  | { type: "git"; vault: LastGitVault }
+export type PendingVault = VaultOpenTarget
 
 interface UnlockScreenProps {
   pending: PendingVault
@@ -29,7 +27,7 @@ export function UnlockScreen({ pending, onUnlock, onBack }: UnlockScreenProps) {
   const vaultName =
     pending.type === "git"
       ? pending.vault.repoName
-      : pending.path.split("/").pop()?.replace(".mmp", "") || "Vault"
+      : pending.path.split(/[\\/]/).pop()?.replace(/\.mmp$/i, "") || "Vault"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

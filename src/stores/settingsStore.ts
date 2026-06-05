@@ -82,7 +82,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   saveSettings: async () => {
     try {
       const state = get();
-      const existing = state._appConfig;
+      const existing = await invoke<AppConfig>("get_config").catch(() => state._appConfig);
       const config: AppConfig = {
         theme: state.theme,
         language: state.language,
@@ -101,7 +101,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       };
       await invoke("update_config", { config });
       // Update _appConfig so subsequent saves preserve latest state
-      set({ _appConfig: config });
+      set({
+        lastVaultPath: config.lastVaultPath ?? null,
+        lastGitVault: config.lastGitVault ?? null,
+        _appConfig: config,
+      });
     } catch (error) {
       console.error("Failed to save settings:", error);
     }

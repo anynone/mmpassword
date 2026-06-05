@@ -4,6 +4,7 @@ import { useTranslation } from "../../i18n"
 import { ShieldCheck, LockOpen, Lock, RefreshCw, FolderOpen, Github } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
 import { useSettingsStore } from "../../stores/settingsStore"
+import type { LastGitVault, VaultOpenTarget } from "../../types"
 
 interface AppFooterProps {
   status?: "secure" | "unlocked" | "locked"
@@ -11,15 +12,26 @@ interface AppFooterProps {
   isSyncing?: boolean
 }
 
-function getVaultSourceInfo(): { label: string; icon: "local" | "git" } | null {
-  const vault = useVaultStore.getState().vault
-  if (!vault) return null
+function getVaultSourceInfo(
+  vaultName: string,
+  currentVaultTarget: VaultOpenTarget | null,
+  lastVaultPath: string | null,
+  lastGitVault: LastGitVault | null
+): { label: string; icon: "local" | "git" } {
+  if (currentVaultTarget?.type === "git") {
+    return {
+      label: `${currentVaultTarget.vault.repoName}:${currentVaultTarget.vault.vaultPath}`,
+      icon: "git",
+    }
+  }
 
-  const { lastVaultPath, lastGitVault } = useSettingsStore.getState()
+  if (currentVaultTarget?.type === "local") {
+    return { label: currentVaultTarget.path, icon: "local" }
+  }
 
   if (lastGitVault) {
     return {
-      label: `${lastGitVault.repoName}:${vault.name}.mmp`,
+      label: `${lastGitVault.repoName}:${lastGitVault.vaultPath}`,
       icon: "git",
     }
   }
@@ -28,7 +40,7 @@ function getVaultSourceInfo(): { label: string; icon: "local" | "git" } | null {
     return { label: lastVaultPath, icon: "local" }
   }
 
-  return { label: `${vault.name}.mmp`, icon: "local" }
+  return { label: `${vaultName}.mmp`, icon: "local" }
 }
 
 export function AppFooter({
@@ -40,6 +52,9 @@ export function AppFooter({
   const [version, setVersion] = useState("")
   useEffect(() => { getVersion().then(setVersion) }, [])
   const vault = useVaultStore((s) => s.vault)
+  const currentVaultTarget = useVaultStore((s) => s.currentVaultTarget)
+  const lastVaultPath = useSettingsStore((s) => s.lastVaultPath)
+  const lastGitVault = useSettingsStore((s) => s.lastGitVault)
 
   const statusConfig = {
     secure: {
@@ -61,7 +76,9 @@ export function AppFooter({
 
   const { text, color, Icon } = statusConfig[status]
 
-  const vaultSource = vault && isUnlocked ? getVaultSourceInfo() : null
+  const vaultSource = vault && isUnlocked
+    ? getVaultSourceInfo(vault.name, currentVaultTarget, lastVaultPath, lastGitVault)
+    : null
   const VaultIcon = vaultSource?.icon === "git" ? Github : FolderOpen
 
   return (

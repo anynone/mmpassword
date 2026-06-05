@@ -12,6 +12,10 @@ export interface LastGitVault {
   repoName: string;
 }
 
+export type VaultOpenTarget =
+  | { type: "local"; path: string }
+  | { type: "git"; vault: LastGitVault };
+
 export interface AppConfig {
   theme: Theme;
   language: string;
