@@ -4,6 +4,8 @@ node_modules/
 # Build output
 dist/
 dist-ssr/
+release-green/
+mmpassword-*-green-*.zip
 
 # Rust build output
 target/
