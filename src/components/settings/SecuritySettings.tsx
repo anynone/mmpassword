@@ -1,10 +1,15 @@
+import { useState } from "react"
+import { Import } from "lucide-react"
 import { useSettingsStore } from "../../stores/settingsStore"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "../../i18n"
+import { GoogleAuthenticatorImportDialog } from "./GoogleAuthenticatorImportDialog"
 
 export function SecuritySettings() {
   const { t } = useTranslation()
+  const [importOpen, setImportOpen] = useState(false)
   const {
     autoLockMinutes,
     clipboardClearSeconds,
@@ -42,7 +47,25 @@ export function SecuritySettings() {
           />
           <p className="text-xs text-muted-foreground">{t("settings.clipboardClear.hint")}</p>
         </div>
+
+        <div className="space-y-2">
+          <Label>{t("totp.import.settingsLabel")}</Label>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setImportOpen(true)}
+            className="w-full justify-start"
+          >
+            <Import className="mr-2 h-4 w-4" />
+            {t("totp.import.open")}
+          </Button>
+        </div>
       </div>
+
+      <GoogleAuthenticatorImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+      />
     </div>
   )
 }

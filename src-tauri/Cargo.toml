@@ -1,6 +1,6 @@
 [package]
 name = "mmpassword"
-version = "0.1.17"
+version = "0.1.18"
 description = "A secure local password manager"
 authors = ["mmpassword"]
 edition = "2021"
@@ -60,6 +60,7 @@ keyring = "2"
 sha2 = "0.10"
 
 # TOTP
+base64 = "0.22"
 totp-rs = "5"
 url = "2"
 
