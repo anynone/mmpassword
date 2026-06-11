@@ -161,6 +161,8 @@ pub fn run() {
             commands::vault::remove_recent_git_repo,
             // TOTP commands
             commands::totp::generate_totp,
+            commands::totp::preview_google_authenticator_import,
+            commands::totp::import_google_authenticator,
             commands::totp::set_totp_secret,
             commands::totp::remove_totp_secret,
         ])
