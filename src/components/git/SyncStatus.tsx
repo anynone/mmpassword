@@ -2,6 +2,7 @@ import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { RefreshCw, Upload, CheckCircle, XCircle, Loader2 } from "lucide-react"
 import { useToast } from "../common/Toast"
+import { useVaultStore } from "../../stores/vaultStore"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { GitSyncResult } from "../../types/git"
@@ -16,9 +17,11 @@ export function SyncStatus({ onSync }: SyncStatusProps) {
   const [syncResult, setSyncResult] = useState<GitSyncResult | null>(null)
 
   const handleSync = async () => {
+    const vaultId = useVaultStore.getState().activeVaultId
+    if (!vaultId) return
     setIsSyncing(true)
     try {
-      const result = await invoke<GitSyncResult>("sync_git_vault")
+      const result = await invoke<GitSyncResult>("sync_git_vault", { vaultId, password: "" })
       setSyncResult(result)
       if (result.success) {
         showToast("success", `Synced! ${result.entriesPulled} pulled, ${result.entriesPushed} pushed`)
@@ -34,9 +37,11 @@ export function SyncStatus({ onSync }: SyncStatusProps) {
   }
 
   const handleSave = async () => {
+    const vaultId = useVaultStore.getState().activeVaultId
+    if (!vaultId) return
     setIsSyncing(true)
     try {
-      await invoke<string>("save_git_vault", { commitMessage: "Update vault" })
+      await invoke<string>("save_git_vault", { vaultId, commitMessage: "Update vault" })
       showToast("success", "Vault saved to Git")
       onSync?.()
     } catch (error) {

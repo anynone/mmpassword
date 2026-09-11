@@ -9,6 +9,7 @@ import { ConfirmDialog } from "../common/ConfirmDialog"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
 import { useSettingsStore } from "../../stores/settingsStore"
+import { useVaultStore } from "../../stores/vaultStore"
 
 interface TotpCardProps {
   entry: Entry
@@ -104,7 +105,9 @@ export function TotpCard({ entry, onEntryUpdated }: TotpCardProps) {
 
   const handleRemove = async () => {
     try {
-      const updated = await invoke<Entry>("remove_totp_secret", { id: entry.id })
+      const vaultId = useVaultStore.getState().activeVaultId
+      if (!vaultId) return
+      const updated = await invoke<Entry>("remove_totp_secret", { vaultId, id: entry.id })
       onEntryUpdated(updated)
       showToast("success", t("totp.removed"))
     } catch (e) {

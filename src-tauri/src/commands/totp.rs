@@ -10,11 +10,10 @@ use totp_rs::{Algorithm, Secret, TOTP};
 use url::Url;
 use uuid::Uuid;
 
+use crate::commands::session_utils::{parse_vault_id, save_vault_changes, update_session_vault};
 use crate::error::{AppError, Result};
-use crate::git::sync::{get_clone_dir, GitSyncEngine};
 use crate::models::{Entry, Field, FieldType, Vault};
 use crate::state::AppState;
-use crate::storage::save_vault_file_with_key;
 
 /// TOTP verification code result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -523,12 +522,14 @@ fn create_totp_entry(otp: &MigrationOtp, title: String) -> Entry {
 #[tauri::command]
 pub async fn preview_google_authenticator_import(
     uri: String,
+    vault_id: String,
     state: State<'_, AppState>,
 ) -> Result<Vec<GoogleAuthenticatorImportItem>> {
     let accounts = parse_google_authenticator_migration_uri(&uri).map_err(AppError::Unknown)?;
 
-    let session = state.session.read();
-    let session = session.as_ref().ok_or(AppError::VaultLocked)?;
+    let id = parse_vault_id(&vault_id)?;
+    let sessions = state.sessions.read();
+    let session = sessions.get(&id).ok_or(AppError::VaultLocked)?;
 
     Ok(accounts
         .iter()
@@ -542,17 +543,19 @@ pub async fn preview_google_authenticator_import(
 pub async fn import_google_authenticator(
     uri: String,
     decisions: Vec<TotpImportDecision>,
+    vault_id: String,
     state: State<'_, AppState>,
 ) -> Result<TotpImportResult> {
     let accounts = parse_google_authenticator_migration_uri(&uri).map_err(AppError::Unknown)?;
+    let vault_uuid = parse_vault_id(&vault_id)?;
     let decisions_by_index: HashMap<usize, TotpImportDecision> = decisions
         .into_iter()
         .map(|decision| (decision.index, decision))
         .collect();
 
     let (mut result_vault, key, salt, imported_count, updated_count, created_count, skipped_count) = {
-        let mut session = state.session.write();
-        let session = session.as_mut().ok_or(AppError::VaultLocked)?;
+        let mut sessions = state.sessions.write();
+        let session = sessions.get_mut(&vault_uuid).ok_or(AppError::VaultLocked)?;
         let mut imported_count = 0;
         let mut updated_count = 0;
         let mut created_count = 0;
@@ -616,6 +619,7 @@ pub async fn import_google_authenticator(
     if imported_count > 0 {
         result_vault = save_vault_changes(
             &state,
+            vault_uuid,
             &result_vault,
             &key,
             &salt,
@@ -623,10 +627,7 @@ pub async fn import_google_authenticator(
         )
         .await?;
 
-        let mut session = state.session.write();
-        if let Some(s) = session.as_mut() {
-            s.vault = result_vault.clone();
-        }
+        update_session_vault(&state, vault_uuid, result_vault.clone(), false);
     }
 
     Ok(TotpImportResult {
@@ -674,6 +675,7 @@ pub fn generate_totp(secret: String) -> std::result::Result<TotpCode, String> {
 /// Set TOTP secret for an entry
 #[tauri::command]
 pub async fn set_totp_secret(
+    vault_id: String,
     id: String,
     secret: String,
     state: State<'_, AppState>,
@@ -693,9 +695,10 @@ pub async fn set_totp_secret(
         .map_err(|e| AppError::Unknown(format!("TOTP validation failed: {}", e)))?;
 
     // Update entry in vault
+    let vault_uuid = parse_vault_id(&vault_id)?;
     let (entry, vault, key, salt) = {
-        let mut session = state.session.write();
-        let session = session.as_mut().ok_or(AppError::VaultLocked)?;
+        let mut sessions = state.sessions.write();
+        let session = sessions.get_mut(&vault_uuid).ok_or(AppError::VaultLocked)?;
 
         let entry_id = Uuid::parse_str(&id).map_err(|_| AppError::EntryNotFound(id.clone()))?;
 
@@ -717,25 +720,25 @@ pub async fn set_totp_secret(
     };
 
     // Save vault (follow Git Vault Save Pattern)
-    let merged = save_vault_changes(&state, &vault, &key, &salt, "Set TOTP secret").await?;
+    let merged = save_vault_changes(&state, vault_uuid, &vault, &key, &salt, "Set TOTP secret").await?;
 
     // Update session with merged vault
-    {
-        let mut session = state.session.write();
-        if let Some(s) = session.as_mut() {
-            s.vault = merged;
-        }
-    }
+    update_session_vault(&state, vault_uuid, merged, false);
 
     Ok(entry)
 }
 
 /// Remove TOTP secret from an entry
 #[tauri::command]
-pub async fn remove_totp_secret(id: String, state: State<'_, AppState>) -> Result<Entry> {
+pub async fn remove_totp_secret(
+    vault_id: String,
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<Entry> {
+    let vault_uuid = parse_vault_id(&vault_id)?;
     let (entry, vault, key, salt) = {
-        let mut session = state.session.write();
-        let session = session.as_mut().ok_or(AppError::VaultLocked)?;
+        let mut sessions = state.sessions.write();
+        let session = sessions.get_mut(&vault_uuid).ok_or(AppError::VaultLocked)?;
 
         let entry_id = Uuid::parse_str(&id).map_err(|_| AppError::EntryNotFound(id.clone()))?;
 
@@ -756,68 +759,12 @@ pub async fn remove_totp_secret(id: String, state: State<'_, AppState>) -> Resul
         )
     };
 
-    let merged = save_vault_changes(&state, &vault, &key, &salt, "Remove TOTP secret").await?;
+    let merged = save_vault_changes(&state, vault_uuid, &vault, &key, &salt, "Remove TOTP secret").await?;
 
     // Update session with merged vault
-    {
-        let mut session = state.session.write();
-        if let Some(s) = session.as_mut() {
-            s.vault = merged;
-        }
-    }
+    update_session_vault(&state, vault_uuid, merged, false);
 
     Ok(entry)
-}
-
-/// Helper: extract Git sync info if available
-fn get_git_sync_info(
-    state: &State<'_, AppState>,
-) -> Option<(crate::git::repository::GitRepository, std::path::PathBuf)> {
-    let session = state.session.read();
-    session
-        .as_ref()
-        .and_then(|s| {
-            s.git_sync.as_ref().map(|git_sync| {
-                let clone_dir = get_clone_dir(&git_sync.repository.url).ok()?;
-                Some((git_sync.repository.clone(), clone_dir))
-            })
-        })
-        .flatten()
-}
-
-/// Helper: get local vault path if available
-fn get_local_vault_path(state: &State<'_, AppState>) -> Option<std::path::PathBuf> {
-    let session = state.session.read();
-    session.as_ref().and_then(|s| {
-        if s.git_sync.is_none() {
-            Some(s.path.clone())
-        } else {
-            None
-        }
-    })
-}
-
-/// Helper: save vault changes (local or Git).
-/// Returns the (possibly merged) vault so callers can update the session.
-async fn save_vault_changes(
-    state: &State<'_, AppState>,
-    vault: &crate::models::Vault,
-    key: &[u8; 32],
-    salt: &[u8; 16],
-    commit_message: &str,
-) -> Result<crate::models::Vault> {
-    if let Some((repository, clone_dir)) = get_git_sync_info(state) {
-        let engine = GitSyncEngine::new(repository, clone_dir);
-        let (_sha, merged) = engine
-            .save_vault(vault, key, salt, Some(commit_message))
-            .await?;
-        Ok(merged)
-    } else if let Some(path) = get_local_vault_path(state) {
-        save_vault_file_with_key(&path, vault, key, salt)?;
-        Ok(vault.clone())
-    } else {
-        Ok(vault.clone())
-    }
 }
 
 #[cfg(test)]

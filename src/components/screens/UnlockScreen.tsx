@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ArrowLeft, Lock, LockOpen, Eye, EyeOff, Loader2 } from "lucide-react"
+import { ArrowLeft, Lock, LockOpen, Eye, EyeOff, Loader2, Github, FolderOpen } from "lucide-react"
 import { useVaultStore } from "../../stores/vaultStore"
 import { AppHeader, AppFooter } from "../layout"
 import { Button } from "@/components/ui/button"
@@ -24,10 +24,16 @@ export function UnlockScreen({ pending, onUnlock, onBack }: UnlockScreenProps) {
   const { unlockVault, openGitVault } = useVaultStore()
   const { t } = useTranslation()
 
+  const isGit = pending.type === "git"
   const vaultName =
-    pending.type === "git"
+    isGit
       ? pending.vault.repoName
       : pending.path.split(/[\\/]/).pop()?.replace(/\.mmp$/i, "") || "Vault"
+  // Source details so the user can tell exactly which vault this password
+  // belongs to when several vaults are open
+  const sourceInfo = isGit
+    ? `${pending.vault.repoUrl} · ${pending.vault.branch} · ${pending.vault.vaultPath}`
+    : pending.path
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,10 +77,29 @@ export function UnlockScreen({ pending, onUnlock, onBack }: UnlockScreenProps) {
                 <Lock className="h-10 w-10 text-primary" />
               </div>
 
-              <h1 className="text-2xl font-headline font-bold mb-1">
+              <h1 className="text-2xl font-headline font-bold mb-2">
                 {vaultName}
               </h1>
-              <p className="text-muted-foreground text-sm mb-10">
+
+              {/* Which vault this unlock screen targets */}
+              <div className="flex flex-col items-center gap-1.5 mb-8">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-0.5 text-xs font-medium text-muted-foreground">
+                  {isGit ? (
+                    <Github className="h-3.5 w-3.5" />
+                  ) : (
+                    <FolderOpen className="h-3.5 w-3.5" />
+                  )}
+                  {isGit ? t("unlock.gitVault") : t("unlock.localVault")}
+                </span>
+                <span
+                  className="text-xs text-muted-foreground/80 break-all max-w-[320px] text-center"
+                  title={sourceInfo}
+                >
+                  {sourceInfo}
+                </span>
+              </div>
+
+              <p className="text-muted-foreground text-sm mb-8">
                 {t("unlock.enterPassword")}
               </p>
 

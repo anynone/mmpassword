@@ -9,7 +9,7 @@ use crate::models::{GitRepoMeta, VaultMeta};
 
 /// Last opened Git vault reference. Contains enough information to
 /// reopen the vault on next startup (still requires the master password).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LastGitVault {
     pub repo_url: String,
@@ -18,6 +18,39 @@ pub struct LastGitVault {
     pub key_path: String,
     /// Display name extracted from vault_path or repo_url.
     pub repo_name: String,
+}
+
+/// How an open vault tab can be reopened on startup (the vault itself stays
+/// locked until the user re-enters the master password).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenVaultTarget {
+    /// "local" or "git"
+    pub target_type: String,
+    /// Local vault file path (target_type == "local")
+    pub path: Option<String>,
+    /// Git vault reference (target_type == "git")
+    pub git: Option<LastGitVault>,
+}
+
+impl OpenVaultTarget {
+    /// Build a local-file target
+    pub fn local(path: impl Into<String>) -> Self {
+        Self {
+            target_type: "local".to_string(),
+            path: Some(path.into()),
+            git: None,
+        }
+    }
+
+    /// Build a Git-repository target
+    pub fn git(vault: LastGitVault) -> Self {
+        Self {
+            target_type: "git".to_string(),
+            path: None,
+            git: Some(vault),
+        }
+    }
 }
 
 /// Application configuration
@@ -43,6 +76,11 @@ pub struct AppConfig {
     pub last_git_vault: Option<LastGitVault>,
     /// Recent Git repositories
     pub recent_git_repos: Vec<GitRepoMeta>,
+    /// Vaults whose tabs were open in the last session (for multi-vault
+    /// session restore). Locked vaults stay in this list; entries are only
+    /// removed when the tab is closed.
+    #[serde(default)]
+    pub open_vaults: Vec<OpenVaultTarget>,
     /// Window state
     pub window_state: WindowState,
 }
@@ -92,6 +130,7 @@ impl Default for AppConfig {
             last_vault_path: None,
             last_git_vault: None,
             recent_git_repos: Vec::new(),
+            open_vaults: Vec::new(),
             window_state: WindowState::default(),
         }
     }
@@ -186,6 +225,23 @@ impl AppConfig {
     pub fn remove_recent_git_repo(&mut self, repo_url: &str, branch: &str) {
         self.recent_git_repos
             .retain(|r| !(r.repo_url == repo_url && r.branch == branch));
+    }
+
+    /// Track a vault as currently open (for session restore)
+    pub fn add_open_vault(&mut self, target: OpenVaultTarget) {
+        if !self.open_vaults.contains(&target) {
+            self.open_vaults.push(target);
+        }
+    }
+
+    /// Stop tracking an open vault (tab closed)
+    pub fn remove_open_vault(&mut self, target: &OpenVaultTarget) {
+        self.open_vaults.retain(|t| t != target);
+    }
+
+    /// Clear the open-vault session list
+    pub fn clear_open_vaults(&mut self) {
+        self.open_vaults.clear();
     }
 }
 

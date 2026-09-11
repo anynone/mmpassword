@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use tauri::State;
 
+use crate::commands::session_utils::parse_vault_id;
 use crate::error::{AppError, Result};
 use crate::git::repository::GitRepository;
 use crate::git::sync::{get_clone_dir, GitSyncEngine, GitSyncResult};
@@ -105,13 +106,15 @@ pub async fn open_git_vault(
         let repo_name = git_meta.repo_name.clone();
         config.add_recent_git_repo(git_meta);
         // Remember this as the last-opened vault so auto-open on startup works.
-        config.set_last_git_vault(crate::storage::LastGitVault {
+        let last_git = crate::storage::LastGitVault {
             repo_url,
             branch,
             vault_path,
             key_path,
             repo_name,
-        });
+        };
+        config.set_last_git_vault(last_git.clone());
+        config.add_open_vault(crate::storage::OpenVaultTarget::git(last_git));
         let _ = config.save();
     }
 
@@ -183,13 +186,15 @@ pub async fn create_git_vault(
         let repo_name = git_meta.repo_name.clone();
         config.add_recent_git_repo(git_meta);
         // Remember this as the last-opened vault so auto-open on startup works.
-        config.set_last_git_vault(crate::storage::LastGitVault {
+        let last_git = crate::storage::LastGitVault {
             repo_url,
             branch,
             vault_path,
             key_path,
             repo_name,
-        });
+        };
+        config.set_last_git_vault(last_git.clone());
+        config.add_open_vault(crate::storage::OpenVaultTarget::git(last_git));
         let _ = config.save();
     }
 
@@ -199,13 +204,16 @@ pub async fn create_git_vault(
 /// Save vault to Git (pull + merge + commit + push)
 #[tauri::command]
 pub async fn save_git_vault(
+    vault_id: String,
     state: State<'_, AppState>,
     commit_message: Option<String>,
 ) -> Result<String> {
+    let id = parse_vault_id(&vault_id)?;
+
     // Get session info
     let (vault, key, salt, repository) = {
-        let session = state.session.read();
-        let session = session.as_ref().ok_or(AppError::VaultLocked)?;
+        let sessions = state.sessions.read();
+        let session = sessions.get(&id).ok_or(AppError::VaultLocked)?;
 
         let git_sync = session
             .git_sync
@@ -224,12 +232,15 @@ pub async fn save_git_vault(
     let engine = GitSyncEngine::new(repository, clone_dir);
 
     let message = commit_message.as_deref().unwrap_or("Update vault");
+    // Serialize git operations: multiple vaults may share one clone dir
+    let _guard = state.git_sync_lock.lock().await;
     let (new_sha, merged) = engine.save_vault(&vault, &key, &salt, Some(message)).await?;
+    drop(_guard);
 
     // Update session with merged vault and sync state
     {
-        let mut session = state.session.write();
-        if let Some(session) = session.as_mut() {
+        let mut sessions = state.sessions.write();
+        if let Some(session) = sessions.get_mut(&id) {
             session.vault = merged;
             session.dirty = false;
             if let Some(ref mut git_sync) = session.git_sync {
@@ -240,21 +251,22 @@ pub async fn save_git_vault(
         }
     }
 
-    state.mark_clean();
-
     Ok(new_sha)
 }
 
 /// Sync vault with Git (pull + merge + push)
 #[tauri::command]
 pub async fn sync_git_vault(
+    vault_id: String,
     state: State<'_, AppState>,
     password: String,
 ) -> Result<GitSyncResult> {
+    let id = parse_vault_id(&vault_id)?;
+
     // Get session info
     let (mut vault, key, salt, repository, sync_state) = {
-        let session = state.session.read();
-        let session = session.as_ref().ok_or(AppError::VaultLocked)?;
+        let sessions = state.sessions.read();
+        let session = sessions.get(&id).ok_or(AppError::VaultLocked)?;
 
         let git_sync = session
             .git_sync
@@ -273,13 +285,16 @@ pub async fn sync_git_vault(
     let clone_dir = get_clone_dir(&repository.url)?;
     let engine = GitSyncEngine::new(repository.clone(), clone_dir);
 
-    // Perform sync (save_vault now handles pull-merge-push internally)
+    // Perform sync (save_vault now handles pull-merge-push internally);
+    // serialize git operations across vaults sharing a clone dir
+    let _guard = state.git_sync_lock.lock().await;
     let result = engine.sync(&mut vault, &password, &sync_state, &key, &salt).await?;
+    drop(_guard);
 
     // Update session with merged vault
     {
-        let mut session = state.session.write();
-        if let Some(session) = session.as_mut() {
+        let mut sessions = state.sessions.write();
+        if let Some(session) = sessions.get_mut(&id) {
             session.vault = vault;
             session.dirty = false;
             if let Some(ref mut git_sync) = session.git_sync {
@@ -297,11 +312,16 @@ pub async fn sync_git_vault(
 
 /// Get Git sync status
 #[tauri::command]
-pub async fn get_git_sync_status(state: State<'_, AppState>) -> Result<Option<GitSyncResult>> {
+pub async fn get_git_sync_status(
+    vault_id: String,
+    state: State<'_, AppState>,
+) -> Result<Option<GitSyncResult>> {
+    let id = parse_vault_id(&vault_id)?;
+
     // Extract needed data from session first to avoid holding lock across await
     let repo_info = {
-        let session = state.session.read();
-        session.as_ref().and_then(|s| {
+        let sessions = state.sessions.read();
+        sessions.get(&id).and_then(|s| {
             s.git_sync.as_ref().map(|gs| {
                 (gs.repository.clone(), gs.sync_state.local_hash.clone())
             })
@@ -329,11 +349,13 @@ pub async fn get_git_sync_status(state: State<'_, AppState>) -> Result<Option<Gi
 
 /// Pull vault from Git (fetch remote changes, decrypt, update session)
 #[tauri::command]
-pub async fn pull_git_vault(state: State<'_, AppState>) -> Result<Vault> {
+pub async fn pull_git_vault(vault_id: String, state: State<'_, AppState>) -> Result<Vault> {
+    let id = parse_vault_id(&vault_id)?;
+
     // Extract needed data from session first to avoid holding lock across await
     let (repository, key, salt) = {
-        let session = state.session.read();
-        let session = session.as_ref().ok_or(AppError::VaultLocked)?;
+        let sessions = state.sessions.read();
+        let session = sessions.get(&id).ok_or(AppError::VaultLocked)?;
 
         let git_sync = session
             .git_sync
@@ -350,8 +372,10 @@ pub async fn pull_git_vault(state: State<'_, AppState>) -> Result<Vault> {
     let clone_dir = get_clone_dir(&repository.url)?;
     let engine = GitSyncEngine::new(repository.clone(), clone_dir);
 
-    // Pull remote changes
+    // Pull remote changes; serialize git operations across vaults
+    let _guard = state.git_sync_lock.lock().await;
     let new_commit = engine.pull().await?;
+    drop(_guard);
 
     // Re-open (decrypt) the vault from the updated clone using existing key
     let vault_path = engine.vault_path();
@@ -361,8 +385,8 @@ pub async fn pull_git_vault(state: State<'_, AppState>) -> Result<Vault> {
 
     // Update session with new vault and sync state
     {
-        let mut session = state.session.write();
-        if let Some(session) = session.as_mut() {
+        let mut sessions = state.sessions.write();
+        if let Some(session) = sessions.get_mut(&id) {
             session.vault = vault.clone();
             session.dirty = false;
             if let Some(ref mut git_sync) = session.git_sync {
@@ -372,8 +396,6 @@ pub async fn pull_git_vault(state: State<'_, AppState>) -> Result<Vault> {
             }
         }
     }
-
-    state.mark_clean();
 
     Ok(vault)
 }
