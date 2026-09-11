@@ -1,22 +1,52 @@
 import { useState, useEffect, useRef } from "react"
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
-import { confirm } from "@tauri-apps/plugin-dialog"
+import { confirm, open } from "@tauri-apps/plugin-dialog"
 import { listen } from "@tauri-apps/api/event"
 import { useVaultStore } from "../../stores/vaultStore"
 import { useSettingsStore } from "../../stores/settingsStore"
-import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail } from "../layout"
+import { TopNavBar, SideNavBar, StatusBar, EntryList, EntryDetail, VaultTabStrip, type AddVaultAction } from "../layout"
 import { GroupDialog } from "../group"
 import { SettingsModal, AboutSettings } from "../settings"
+import { GitRepoSetupModal } from "../git"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
 import { useAutoLock } from "../../hooks/useAutoLock"
 import type { Entry, Group } from "../../types"
 
-interface MainScreenProps {
-  onLock: () => void;
+/** Payload of the backend `sync:*` events */
+interface SyncEventPayload {
+  vaultId: string
+  error?: string
 }
 
-export function MainScreen({ onLock }: MainScreenProps) {
+interface MainScreenProps {
+  /** Open a local vault file (switches to the unlock screen) */
+  onAddLocalVault: (path: string) => void;
+  /** Switch to the "create new vault" screen */
+  onCreateVault: () => void;
+  onOpenGitVault: (
+    repoUrl: string,
+    branch: string,
+    vaultPath: string,
+    keyPath: string,
+    password: string
+  ) => void;
+  onCreateGitVault: (
+    repoUrl: string,
+    branch: string,
+    vaultPath: string,
+    keyPath: string,
+    name: string,
+    password: string
+  ) => void;
+}
+
+export function MainScreen({
+  onAddLocalVault,
+  onCreateVault,
+  onOpenGitVault,
+  onCreateGitVault,
+}: MainScreenProps) {
   // Auto-lock on idle
   useAutoLock();
 
@@ -24,10 +54,11 @@ export function MainScreen({ onLock }: MainScreenProps) {
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isGitSetupOpen, setIsGitSetupOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 
   const {
-    vault,
+    activeVaultId,
     selectedEntryId,
     selectedGroupId,
     selectGroup,
@@ -47,23 +78,28 @@ export function MainScreen({ onLock }: MainScreenProps) {
   const { t } = useTranslation();
   const { clipboardClearSeconds } = useSettingsStore();
 
-  // Load data
+  // Load data for the active vault
   useEffect(() => {
-    loadData();
-  }, [vault]);
+    if (activeVaultId) {
+      loadData();
+    }
+  }, [activeVaultId]);
 
   // Listen to backend sync events so we can surface "syncing" status in the
-  // footer while background git commit+push work runs.
+  // footer while background git commit+push work runs. Events carry the
+  // vault id so counters stay correct when several vaults are open.
   useEffect(() => {
     const unlistenPromises = [
-      listen("sync:started", () => {
-        useVaultStore.getState().notifySyncStarted();
+      listen<SyncEventPayload>("sync:started", (event) => {
+        useVaultStore.getState().notifySyncStarted(event.payload?.vaultId);
       }),
-      listen<string>("sync:failed", (event) => {
-        useVaultStore.getState().notifySyncFailed(event.payload);
+      listen<SyncEventPayload>("sync:failed", (event) => {
+        useVaultStore
+          .getState()
+          .notifySyncFailed(event.payload?.error ?? "Unknown sync error", event.payload?.vaultId);
       }),
-      listen("sync:completed", () => {
-        useVaultStore.getState().notifySyncCompleted();
+      listen<SyncEventPayload>("sync:completed", (event) => {
+        useVaultStore.getState().notifySyncCompleted(event.payload?.vaultId);
       }),
     ];
     return () => {
@@ -72,6 +108,20 @@ export function MainScreen({ onLock }: MainScreenProps) {
       });
     };
   }, []);
+
+  // Inform the user when a vault they tried to add was already open
+  useEffect(() => {
+    const checkDuplicate = () => {
+      if (useVaultStore.getState().lastOpenWasDuplicate) {
+        showToast("info", t("vaultTabs.alreadyOpen"));
+        useVaultStore.setState({ lastOpenWasDuplicate: false });
+      }
+    };
+    // The flag may have been set while this screen was not mounted
+    checkDuplicate();
+    const unsubscribe = useVaultStore.subscribe(checkDuplicate);
+    return unsubscribe;
+  }, [showToast, t]);
 
   // Show a toast if a background sync fails so the user is informed.
   useEffect(() => {
@@ -99,10 +149,11 @@ export function MainScreen({ onLock }: MainScreenProps) {
     ? entries.filter((e) => e.groupId === selectedGroupId)
     : entries;
 
-  // Handle lock
+  // Handle lock: locks only the active vault. If other unlocked vaults
+  // remain the active tab switches automatically and the screen stays;
+  // otherwise the app transitions to the unlock screen.
   const handleLock = async () => {
     await lockVault();
-    onLock();
   };
 
   // Handle settings
@@ -113,6 +164,40 @@ export function MainScreen({ onLock }: MainScreenProps) {
   // Handle about
   const handleAbout = () => {
     setIsAboutOpen(true);
+  };
+
+  // Handle the "+" menu in the vault tab strip
+  const handleAddVault = async (action: AddVaultAction) => {
+    if (action === "local") {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: "mmpassword Vault", extensions: ["mmp"] }],
+      });
+      if (selected && typeof selected === "string") {
+        onAddLocalVault(selected);
+      }
+    } else if (action === "git") {
+      setIsGitSetupOpen(true);
+    } else {
+      onCreateVault();
+    }
+  };
+
+  const handleGitSetupComplete = (
+    repoUrl: string,
+    branch: string,
+    vaultPath: string,
+    keyPath: string,
+    password: string,
+    isNew: boolean,
+    name?: string
+  ) => {
+    setIsGitSetupOpen(false);
+    if (isNew && name) {
+      onCreateGitVault(repoUrl, branch, vaultPath, keyPath, name, password);
+    } else {
+      onOpenGitVault(repoUrl, branch, vaultPath, keyPath, password);
+    }
   };
 
   // Entry actions
@@ -174,6 +259,9 @@ export function MainScreen({ onLock }: MainScreenProps) {
       {/* Top Navigation Bar */}
       <TopNavBar onLock={handleLock} onSettings={handleSettings} onAbout={handleAbout} />
 
+      {/* Open vault tabs + add vault */}
+      <VaultTabStrip onAddVault={handleAddVault} />
+
       {/* Main Workspace */}
       <div className="flex flex-1 overflow-hidden">
         {/* SideNavBar - Groups */}
@@ -210,6 +298,13 @@ export function MainScreen({ onLock }: MainScreenProps) {
           setEditingGroup(null);
         }}
         group={editingGroup}
+      />
+
+      {/* Git repo setup (add vault from Git) */}
+      <GitRepoSetupModal
+        isOpen={isGitSetupOpen}
+        onClose={() => setIsGitSetupOpen(false)}
+        onComplete={handleGitSetupComplete}
       />
 
       {/* Settings Modal */}

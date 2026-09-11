@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { invoke } from "@tauri-apps/api/core";
 import { Loader2 } from "lucide-react";
 import { useVaultStore } from "./stores/vaultStore";
 import { useSettingsStore } from "./stores/settingsStore";
@@ -10,20 +11,9 @@ import { NewVaultScreen } from "./components/screens/NewVaultScreen";
 import { ThemeProvider, ToastProvider } from "./components/common";
 import { Toaster } from "@/components/ui/sonner";
 import { useTranslation } from "./i18n";
-import type { LastGitVault, VaultOpenTarget } from "./types/common";
+import { toVaultOpenTarget, type VaultOpenTarget } from "./types";
 
 export type AppScreen = "welcome" | "unlock" | "main" | "newVault";
-
-function buildPendingVault(
-  currentVaultTarget: VaultOpenTarget | null,
-  lastVaultPath: string | null,
-  lastGitVault: LastGitVault | null
-): PendingVault | null {
-  if (currentVaultTarget) return currentVaultTarget;
-  if (lastVaultPath) return { type: "local", path: lastVaultPath };
-  if (lastGitVault) return { type: "git", vault: lastGitVault };
-  return null;
-}
 
 interface LoadingState {
   isLoading: boolean;
@@ -55,9 +45,14 @@ function App() {
   const [pendingVault, setPendingVault] = useState<PendingVault | null>(null);
   const [loading, setLoading] = useState<LoadingState>({ isLoading: false, message: "" });
 
-  const { vault, isUnlocked, isLocked, openGitVault, createGitVault } = useVaultStore();
+  const { vault, isUnlocked, isLocked, openGitVault, createGitVault, switchVault } = useVaultStore();
   const currentVaultTarget = useVaultStore((s) => s.currentVaultTarget);
-  const { loadSettings, openLastVault, lastVaultPath, lastGitVault } = useSettingsStore();
+  const hasOpenVaults = useVaultStore((s) => s.hasOpenVaults);
+  const hasUnlockedVaults = useVaultStore((s) =>
+    s.tabs.some((tab) => tab.status === "unlocked")
+  );
+  const { loadSettings, openLastVault, lastVaultPath, lastGitVault, openVaults } = useSettingsStore();
+  const restoreTabs = useVaultStore((s) => s.restoreTabs);
   const { t } = useTranslation();
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
@@ -66,17 +61,34 @@ function App() {
     loadSettings().then(() => setSettingsLoaded(true));
   }, [loadSettings]);
 
-  // Auto-open last vault on startup (local or Git)
+  // Restore the previous session: every vault tab that was open at exit is
+  // brought back as a locked tab, and the most recently opened one gets the
+  // unlock prompt. Falls back to the legacy single-vault auto-open.
   useEffect(() => {
     if (!settingsLoaded) return;
-    if (!openLastVault || currentScreen !== "welcome") return;
+    if (currentScreen !== "welcome" || hasOpenVaults) return;
 
-    if (lastVaultPath) {
-      setPendingVault({ type: "local", path: lastVaultPath });
-      setCurrentScreen("unlock");
-    } else if (lastGitVault) {
-      setPendingVault({ type: "git", vault: lastGitVault });
-      setCurrentScreen("unlock");
+    if (openLastVault) {
+      const targets = (openVaults ?? [])
+        .map(toVaultOpenTarget)
+        .filter((target): target is VaultOpenTarget => target !== null);
+      if (targets.length > 0) {
+        restoreTabs(targets);
+        setPendingVault(targets[targets.length - 1]);
+        setCurrentScreen("unlock");
+        return;
+      }
+
+      if (lastVaultPath) {
+        setPendingVault({ type: "local", path: lastVaultPath });
+        setCurrentScreen("unlock");
+      } else if (lastGitVault) {
+        setPendingVault({ type: "git", vault: lastGitVault });
+        setCurrentScreen("unlock");
+      }
+    } else {
+      // Auto-open disabled: discard the stale session list from the last run
+      invoke("clear_open_vaults").catch(console.error);
     }
   }, [settingsLoaded]);
 
@@ -87,10 +99,12 @@ function App() {
     }
   }, [isUnlocked, vault]);
 
-  // Return to unlock when vault is locked (e.g. auto-lock)
+  // When the active vault is locked (manual lock of the last unlocked vault
+  // or idle auto-lock), show the unlock screen for it; if every tab was
+  // closed, go back to the welcome screen.
   useEffect(() => {
     if (isLocked && currentScreen === "main") {
-      const pending = buildPendingVault(currentVaultTarget, lastVaultPath, lastGitVault);
+      const pending = hasOpenVaults ? currentVaultTarget : null;
       if (pending) {
         setPendingVault(pending);
         setCurrentScreen("unlock");
@@ -99,7 +113,7 @@ function App() {
         setCurrentScreen("welcome");
       }
     }
-  }, [isLocked, currentScreen, currentVaultTarget, lastVaultPath, lastGitVault]);
+  }, [isLocked, currentScreen, currentVaultTarget, hasOpenVaults]);
 
   const handleOpenVault = (path: string) => {
     setPendingVault({ type: "local", path });
@@ -118,20 +132,21 @@ function App() {
     setCurrentScreen("main");
   };
 
-  const handleLock = () => {
-    const pending = buildPendingVault(currentVaultTarget, lastVaultPath, lastGitVault);
-    if (pending) {
-      setPendingVault(pending);
-      setCurrentScreen("unlock");
-    } else {
-      setPendingVault(null);
-      setCurrentScreen("welcome");
-    }
-  };
-
   const handleBack = () => {
-    setCurrentScreen("welcome");
-    setPendingVault(null);
+    if (hasUnlockedVaults) {
+      // Other vaults are still open: switch to one instead of leaving to welcome
+      const firstUnlocked = useVaultStore
+        .getState()
+        .tabs.find((tab) => tab.status === "unlocked");
+      if (firstUnlocked) {
+        switchVault(firstUnlocked.vaultId);
+      }
+      setPendingVault(null);
+      setCurrentScreen("main");
+    } else {
+      setCurrentScreen("welcome");
+      setPendingVault(null);
+    }
   };
 
   // Handle opening a vault from Git repository
@@ -212,7 +227,12 @@ function App() {
           )}
 
           {currentScreen === "main" && (
-            <MainScreen onLock={handleLock} />
+            <MainScreen
+              onAddLocalVault={handleOpenVault}
+              onCreateVault={handleCreateVault}
+              onOpenGitVault={handleOpenGitVault}
+              onCreateGitVault={handleCreateGitVault}
+            />
           )}
         </div>
 

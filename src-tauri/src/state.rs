@@ -1,10 +1,12 @@
 //! Application state management
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use parking_lot::RwLock;
 use tokio::sync::{Mutex as AsyncMutex, RwLock as AsyncRwLock};
+use uuid::Uuid;
 use zeroize::ZeroizeOnDrop;
 
 use crate::models::Vault;
@@ -27,11 +29,11 @@ impl EncryptionKey {
     }
 }
 
-/// Represents the current vault session
+/// Represents an open vault session
 pub struct VaultSession {
     /// The decrypted vault
     pub vault: Vault,
-    /// The file path
+    /// The file path (pseudo `git://` path for Git vaults)
     pub path: PathBuf,
     /// The encryption key (kept in memory)
     pub key: EncryptionKey,
@@ -52,13 +54,17 @@ pub struct GitSyncSession {
     pub sync_state: GitSyncState,
 }
 
-/// Application state shared across all commands
+/// Application state shared across all commands.
+///
+/// Multiple vaults can be unlocked at the same time; sessions are keyed by
+/// the vault's stable `Vault::id` so opening the same vault file twice
+/// replaces (dedupes) the existing session.
 pub struct AppState {
-    /// The current vault session (if any)
-    pub session: RwLock<Option<VaultSession>>,
+    /// Open vault sessions keyed by vault id
+    pub sessions: RwLock<HashMap<Uuid, VaultSession>>,
     /// Application configuration
     pub config: AsyncRwLock<AppConfig>,
-    /// Lock to serialize background git sync operations
+    /// Lock to serialize git sync operations
     pub git_sync_lock: Arc<AsyncMutex<()>>,
 }
 
@@ -66,66 +72,71 @@ impl AppState {
     /// Create a new application state
     pub fn new(config: AppConfig) -> Self {
         Self {
-            session: RwLock::new(None),
+            sessions: RwLock::new(HashMap::new()),
             config: AsyncRwLock::new(config),
             git_sync_lock: Arc::new(AsyncMutex::new(())),
         }
     }
 
-    /// Check if a vault is currently open and unlocked
+    /// Check if any vault session is open
     pub fn is_unlocked(&self) -> bool {
-        let session = self.session.read();
-        session.is_some()
+        !self.sessions.read().is_empty()
     }
 
-    /// Get the current vault (if unlocked)
-    pub fn get_vault(&self) -> Option<Vault> {
-        let session = self.session.read();
-        session.as_ref().map(|s| s.vault.clone())
+    /// Get the vault of an open session
+    pub fn get_vault(&self, vault_id: Uuid) -> Option<Vault> {
+        self.sessions.read().get(&vault_id).map(|s| s.vault.clone())
     }
 
-    /// Get the current vault path (if any)
-    pub fn get_vault_path(&self) -> Option<PathBuf> {
-        let session = self.session.read();
-        session.as_ref().map(|s| s.path.clone())
+    /// Get any open vault (for legacy single-vault callers)
+    pub fn get_any_vault(&self) -> Option<Vault> {
+        self.sessions
+            .read()
+            .values()
+            .next()
+            .map(|s| s.vault.clone())
     }
 
     /// Set the vault as modified
-    pub fn mark_dirty(&self) {
-        let mut session = self.session.write();
-        if let Some(session) = session.as_mut() {
+    pub fn mark_dirty(&self, vault_id: Uuid) {
+        if let Some(session) = self.sessions.write().get_mut(&vault_id) {
             session.dirty = true;
         }
     }
 
     /// Mark the vault as clean (saved)
-    pub fn mark_clean(&self) {
-        let mut session = self.session.write();
-        if let Some(session) = session.as_mut() {
+    pub fn mark_clean(&self, vault_id: Uuid) {
+        if let Some(session) = self.sessions.write().get_mut(&vault_id) {
             session.dirty = false;
         }
     }
 
-    /// Clear the current session (lock)
-    pub fn clear_session(&self) {
-        let mut session = self.session.write();
-        *session = None;
+    /// Remove a single session (lock that vault)
+    pub fn clear_session(&self, vault_id: Uuid) {
+        self.sessions.write().remove(&vault_id);
     }
 
-    /// Set a new session (unlock)
+    /// Remove every session (lock all vaults)
+    pub fn clear_all_sessions(&self) {
+        self.sessions.write().clear();
+    }
+
+    /// Insert or replace a session (unlock). The session is keyed by the
+    /// vault's own id, so re-opening the same vault replaces the session.
     pub fn set_session(&self, vault: Vault, path: PathBuf, key: [u8; 32], salt: [u8; 16]) {
-        let mut session = self.session.write();
-        *session = Some(VaultSession {
+        let vault_id = vault.id;
+        let session = VaultSession {
             vault,
             path,
             key: EncryptionKey::new(key),
             salt,
             dirty: false,
             git_sync: None,
-        });
+        };
+        self.sessions.write().insert(vault_id, session);
     }
 
-    /// Set a new session with Git sync info
+    /// Insert or replace a session with Git sync info
     pub fn set_session_with_git(
         &self,
         vault: Vault,
@@ -135,8 +146,8 @@ impl AppState {
         repository: GitRepository,
         sync_state: GitSyncState,
     ) {
-        let mut session = self.session.write();
-        *session = Some(VaultSession {
+        let vault_id = vault.id;
+        let session = VaultSession {
             vault,
             path,
             key: EncryptionKey::new(key),
@@ -146,9 +157,7 @@ impl AppState {
                 repository,
                 sync_state,
             }),
-        });
+        };
+        self.sessions.write().insert(vault_id, session);
     }
 }
-
-/// Global application state
-pub type SharedState = Arc<AppState>;

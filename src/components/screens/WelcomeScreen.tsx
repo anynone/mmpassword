@@ -5,7 +5,7 @@ import { FolderOpen, CloudCog, Plus, ChevronRight, Settings } from "lucide-react
 import { useVaultStore } from "../../stores/vaultStore"
 import { useSettingsStore } from "../../stores/settingsStore"
 import type { VaultMeta, GitRepoMeta } from "../../types"
-import { GitRepoSetup } from "../git/GitRepoSetup"
+import { GitRepoSetupModal } from "../git/GitRepoSetupModal"
 import { SettingsModal } from "../settings"
 import { Modal } from "../common"
 import { AppHeader, AppFooter } from "../layout"
@@ -281,20 +281,15 @@ export function WelcomeScreen({
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
-      {showGitSetup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl">
-            <GitRepoSetup
-              onComplete={handleGitSetupComplete}
-              onBack={() => {
-                setShowGitSetup(false)
-                setSelectedGitRepo(null)
-              }}
-              initialRepo={selectedGitRepo}
-            />
-          </div>
-        </div>
-      )}
+      <GitRepoSetupModal
+        isOpen={showGitSetup}
+        onClose={() => {
+          setShowGitSetup(false)
+          setSelectedGitRepo(null)
+        }}
+        onComplete={handleGitSetupComplete}
+        initialRepo={selectedGitRepo}
+      />
 
       <Modal
         isOpen={showAllVaults}

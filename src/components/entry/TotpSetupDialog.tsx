@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "../common/Toast"
 import { useTranslation } from "../../i18n"
+import { useVaultStore } from "../../stores/vaultStore"
 
 interface TotpSetupDialogProps {
   entry: Entry
@@ -88,6 +89,7 @@ export function TotpSetupDialog({
     setIsSaving(true)
     try {
       const updated = await invoke<Entry>("set_totp_secret", {
+        vaultId: useVaultStore.getState().activeVaultId,
         id: entry.id,
         secret: inputValue.trim(),
       })

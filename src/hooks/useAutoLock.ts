@@ -3,13 +3,13 @@ import { useSettingsStore } from "../stores/settingsStore";
 import { useVaultStore } from "../stores/vaultStore";
 
 /**
- * Monitors user activity and automatically locks the vault after
+ * Monitors user activity and automatically locks ALL open vaults after
  * the configured idle timeout (autoLockMinutes).
  */
 export function useAutoLock() {
   const autoLockMinutes = useSettingsStore((s) => s.autoLockMinutes);
   const isUnlocked = useVaultStore((s) => s.isUnlocked);
-  const lockVault = useVaultStore((s) => s.lockVault);
+  const lockAllVaults = useVaultStore((s) => s.lockAllVaults);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
@@ -25,10 +25,10 @@ export function useAutoLock() {
     timerRef.current = setTimeout(() => {
       const idleMs = Date.now() - lastActivityRef.current;
       if (idleMs >= timeoutMs - 500) {
-        lockVault();
+        lockAllVaults();
       }
     }, timeoutMs);
-  }, [autoLockMinutes, lockVault]);
+  }, [autoLockMinutes, lockAllVaults]);
 
   // Only set up listeners when vault is unlocked
   useEffect(() => {

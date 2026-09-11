@@ -46,6 +46,14 @@ export const translations: Record<string, Record<string, string>> = {
     "topNav.search.matchGroup": "Group: {group}",
     "topNav.search.matchTag": "Tag match",
 
+    // Vault tabs
+    "vaultTabs.addVault": "Add Vault",
+    "vaultTabs.openLocal": "Open Local Vault File",
+    "vaultTabs.connectGit": "Connect Git Repository",
+    "vaultTabs.createNew": "Create New Vault",
+    "vaultTabs.alreadyOpen": "This vault is already open",
+    "vaultTabs.closeTab": "Close Tab",
+
     // SideNavBar
     "sideNav.groups": "Groups",
     "sideNav.newGroup": "New Group",
@@ -129,6 +137,8 @@ export const translations: Record<string, Record<string, string>> = {
     // UnlockScreen
     "unlock.backToWelcome": "Back to Welcome",
     "unlock.enterPassword": "Enter your master password to unlock",
+    "unlock.gitVault": "Git Vault",
+    "unlock.localVault": "Local Vault",
     "unlock.masterPassword": "Master Password",
     "unlock.hide": "Hide",
     "unlock.show": "Show",
@@ -322,6 +332,14 @@ export const translations: Record<string, Record<string, string>> = {
     "topNav.search.matchGroup": "分组：{group}",
     "topNav.search.matchTag": "标签匹配",
 
+    // Vault tabs
+    "vaultTabs.addVault": "添加密码库",
+    "vaultTabs.openLocal": "打开本地密码库文件",
+    "vaultTabs.connectGit": "连接 Git 仓库",
+    "vaultTabs.createNew": "新建密码库",
+    "vaultTabs.alreadyOpen": "该密码库已打开",
+    "vaultTabs.closeTab": "关闭标签页",
+
     // SideNavBar
     "sideNav.groups": "分组",
     "sideNav.newGroup": "新建分组",
@@ -405,6 +423,8 @@ export const translations: Record<string, Record<string, string>> = {
     // UnlockScreen
     "unlock.backToWelcome": "返回欢迎页",
     "unlock.enterPassword": "输入主密码以解锁",
+    "unlock.gitVault": "Git 密码库",
+    "unlock.localVault": "本地密码库",
     "unlock.masterPassword": "主密码",
     "unlock.hide": "隐藏",
     "unlock.show": "显示",

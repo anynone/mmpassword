@@ -5,3 +5,4 @@ export { SideNavBar } from "./SideNavBar";
 export { StatusBar } from "./StatusBar";
 export { EntryList } from "./EntryList";
 export { EntryDetail } from "./EntryDetail";
+export { VaultTabStrip, type AddVaultAction } from "./VaultTabStrip";

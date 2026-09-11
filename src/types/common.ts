@@ -16,6 +16,32 @@ export type VaultOpenTarget =
   | { type: "local"; path: string }
   | { type: "git"; vault: LastGitVault };
 
+/** Serialized form of VaultOpenTarget stored in the backend config */
+export interface OpenVaultTargetConfig {
+  targetType: "local" | "git";
+  path?: string | null;
+  git?: LastGitVault | null;
+}
+
+/** Convert a config-stored open-vault entry into a VaultOpenTarget */
+export function toVaultOpenTarget(entry: OpenVaultTargetConfig): VaultOpenTarget | null {
+  if (entry.targetType === "local" && entry.path) {
+    return { type: "local", path: entry.path };
+  }
+  if (entry.targetType === "git" && entry.git) {
+    return { type: "git", vault: entry.git };
+  }
+  return null;
+}
+
+/** Convert a VaultOpenTarget into the config-stored form */
+export function toOpenVaultTargetConfig(target: VaultOpenTarget): OpenVaultTargetConfig {
+  if (target.type === "local") {
+    return { targetType: "local", path: target.path, git: null };
+  }
+  return { targetType: "git", path: null, git: target.vault };
+}
+
 export interface AppConfig {
   theme: Theme;
   language: string;
@@ -26,6 +52,7 @@ export interface AppConfig {
   lastVaultPath?: string;
   lastGitVault?: LastGitVault;
   recentGitRepos: GitRepoMeta[];
+  openVaults?: OpenVaultTargetConfig[];
   windowState: WindowState;
 }
 

@@ -160,7 +160,7 @@ export function GoogleAuthenticatorImportDialog({
     try {
       const previewItems = await invoke<GoogleAuthenticatorImportItem[]>(
         "preview_google_authenticator_import",
-        { uri: trimmed }
+        { uri: trimmed, vaultId: useVaultStore.getState().activeVaultId }
       )
       const nextDecisions = Object.fromEntries(
         previewItems.map((item) => [item.index, initialDecisionFor(item)])
@@ -211,15 +211,14 @@ export function GoogleAuthenticatorImportDialog({
     setIsImporting(true)
     setError(null)
     try {
+      // Scope the import to the vault that was active when it started
+      const vaultId = useVaultStore.getState().activeVaultId
       const result = await invoke<TotpImportResult>("import_google_authenticator", {
         uri: migrationUri.trim(),
         decisions: Object.values(decisions),
+        vaultId,
       })
-      useVaultStore.setState({
-        vault: result.vault,
-        entries: result.vault.entries,
-        groups: result.vault.groups,
-      })
+      useVaultStore.getState().applyVaultUpdate(result.vault, vaultId)
       showToast(
         "success",
         t("totp.import.success", {

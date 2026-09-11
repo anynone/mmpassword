@@ -8,7 +8,7 @@ use crate::crypto::{derive_key, generate_salt, KdfParams};
 use crate::error::{AppError, Result};
 use crate::models::{GitRepoMeta, Vault, VaultMeta};
 use crate::state::AppState;
-use crate::storage::{create_vault_file_with_key, open_vault_file_with_key, AppConfig};
+use crate::storage::{create_vault_file_with_key, open_vault_file_with_key, AppConfig, OpenVaultTarget};
 
 /// Create a new vault
 #[tauri::command]
@@ -47,6 +47,7 @@ pub async fn create_vault(
         let meta = VaultMeta::new(&path, &name);
         config.add_recent_vault(meta);
         config.set_last_vault(&path);
+        config.add_open_vault(OpenVaultTarget::local(&path));
         let _ = config.save();
     }
 
@@ -106,18 +107,66 @@ pub async fn unlock_vault(
         let meta = VaultMeta::new(&path, &vault.name);
         config.add_recent_vault(meta);
         config.set_last_vault(&path);
+        config.add_open_vault(OpenVaultTarget::local(&path));
         let _ = config.save();
     }
 
     Ok(vault)
 }
 
-/// Lock the current vault
+/// Lock a specific vault. The vault stays in the open-vault session list
+/// (its tab remains in the UI); unknown ids are ignored (idempotent).
 #[tauri::command]
 pub async fn lock_vault(
+    vault_id: String,
     state: State<'_, AppState>,
 ) -> Result<()> {
-    state.clear_session();
+    if let Ok(id) = uuid::Uuid::parse_str(&vault_id) {
+        state.clear_session(id);
+    }
+    Ok(())
+}
+
+/// Close a vault tab: drop its session (if any) and stop tracking it for
+/// session restore. Idempotent.
+#[tauri::command]
+pub async fn close_vault(
+    vault_id: Option<String>,
+    target: Option<OpenVaultTarget>,
+    state: State<'_, AppState>,
+) -> Result<()> {
+    if let Some(vault_id) = vault_id {
+        if let Ok(id) = uuid::Uuid::parse_str(&vault_id) {
+            state.clear_session(id);
+        }
+    }
+
+    let mut config = state.config.write().await;
+    if let Some(target) = &target {
+        config.remove_open_vault(target);
+    }
+    let _ = config.save();
+    Ok(())
+}
+
+/// Discard the stored open-vault session list (used when the user disabled
+/// auto-open, so a stale list from the previous session is not restored).
+#[tauri::command]
+pub async fn clear_open_vaults(
+    state: State<'_, AppState>,
+) -> Result<()> {
+    let mut config = state.config.write().await;
+    config.clear_open_vaults();
+    let _ = config.save();
+    Ok(())
+}
+
+/// Lock every open vault (used by idle auto-lock)
+#[tauri::command]
+pub async fn lock_all_vaults(
+    state: State<'_, AppState>,
+) -> Result<()> {
+    state.clear_all_sessions();
     Ok(())
 }
 
@@ -126,8 +175,9 @@ pub async fn lock_vault(
 pub async fn save_vault(
     state: State<'_, AppState>,
 ) -> Result<()> {
-    let session = state.session.read();
-    let _session = session.as_ref().ok_or(AppError::VaultLocked)?;
+    if !state.is_unlocked() {
+        return Err(AppError::VaultLocked);
+    }
 
     // For now, we need the password to save
     // In a full implementation, we would store the key or use a different approach
@@ -141,10 +191,10 @@ pub async fn save_vault(
 pub async fn get_current_vault(
     state: State<'_, AppState>,
 ) -> Result<Option<Vault>> {
-    Ok(state.get_vault())
+    Ok(state.get_any_vault())
 }
 
-/// Check if vault is unlocked
+/// Check if any vault is unlocked
 #[tauri::command]
 pub async fn is_vault_unlocked(
     state: State<'_, AppState>,

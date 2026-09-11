@@ -109,6 +109,9 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
           fieldType: f.fieldType,
           protected: f.fieldType === "password",
         }))
+      // Scope the post-save updates to the vault being edited, so switching
+      // tabs while the save is in flight can't target another vault
+      const vaultId = useVaultStore.getState().activeVaultId
       const newEntry = await createEntry({
         title: formData.title.trim(),
         entryType: formData.entryType,
@@ -117,8 +120,8 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
         tags: [],
         favorite: formData.favorite,
       })
-      useVaultStore.getState().selectEntry(newEntry.id)
-      cancelEditing()
+      useVaultStore.getState().selectEntry(newEntry.id, vaultId)
+      cancelEditing(vaultId)
       showToast("success", t("entryDetail.entryCreated"))
     } catch (error) {
       showToast("error", String(error))
@@ -302,11 +305,7 @@ export function EntryDetail({ entry, onCopyField }: EntryDetailProps) {
             <TotpCard
               entry={entry}
               onEntryUpdated={(updated) => {
-                useVaultStore.setState((state) => ({
-                  entries: state.entries.map((e) =>
-                    e.id === updated.id ? updated : e
-                  ),
-                }))
+                useVaultStore.getState().applyEntryUpdate(updated)
               }}
             />
           </div>
