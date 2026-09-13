@@ -31,7 +31,18 @@ export function VaultTabStrip({ onAddVault }: VaultTabStripProps) {
   const { t } = useTranslation()
 
   const menuRef = useRef<HTMLDivElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null)
+
+  const openMenu = () => {
+    const rect = menuButtonRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const MENU_WIDTH = 224 // w-56
+    const left = Math.min(Math.max(rect.left, 8), window.innerWidth - MENU_WIDTH - 8)
+    setMenuPos({ top: rect.bottom + 6, left })
+    setIsMenuOpen(true)
+  }
   const [confirmState, setConfirmState] = useState<{
     isOpen: boolean
     pendingAction: () => void
@@ -149,17 +160,21 @@ export function VaultTabStrip({ onAddVault }: VaultTabStripProps) {
       {/* Add vault */}
       <div ref={menuRef} className="relative py-1.5 shrink-0">
         <Button
+          ref={menuButtonRef}
           variant="ghost"
           size="icon"
           className="h-7 w-7 rounded-full shrink-0"
           title={t("vaultTabs.addVault")}
-          onClick={() => setIsMenuOpen((open) => !open)}
+          onClick={() => (isMenuOpen ? setIsMenuOpen(false) : openMenu())}
         >
           <Plus className="h-4 w-4" />
         </Button>
 
-        {isMenuOpen && (
-          <div className="absolute right-0 top-9 z-50 w-56 overflow-hidden rounded-lg border border-border bg-popover shadow-xl">
+        {isMenuOpen && menuPos && (
+          <div
+            style={{ position: "fixed", top: menuPos.top, left: menuPos.left }}
+            className="z-50 w-56 overflow-hidden rounded-lg border border-border bg-popover shadow-xl"
+          >
             <button
               type="button"
               className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
