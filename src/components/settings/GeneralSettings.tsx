@@ -12,7 +12,7 @@ import { useTranslation } from "../../i18n"
 
 export function GeneralSettings() {
   const { t } = useTranslation()
-  const { theme, language, openLastVault, setTheme, setLanguage, setOpenLastVault } = useSettingsStore()
+  const { theme, language, openLastVault, checkForUpdates, setTheme, setLanguage, setOpenLastVault, setCheckForUpdates } = useSettingsStore()
 
   const themeOptions = [
     { value: "light", label: t("settings.theme.light") },
@@ -63,6 +63,13 @@ export function GeneralSettings() {
           description={t("settings.openLastVault.desc")}
           checked={openLastVault}
           onChange={setOpenLastVault}
+        />
+
+        <Toggle
+          label={t("settings.checkForUpdates")}
+          description={t("settings.checkForUpdates.desc")}
+          checked={checkForUpdates}
+          onChange={setCheckForUpdates}
         />
       </div>
     </div>

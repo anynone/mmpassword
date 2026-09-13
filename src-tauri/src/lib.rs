@@ -168,6 +168,9 @@ pub fn run() {
             commands::totp::import_google_authenticator,
             commands::totp::set_totp_secret,
             commands::totp::remove_totp_secret,
+            // Update check
+            commands::update::check_latest_version,
+            commands::update::open_release_page,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

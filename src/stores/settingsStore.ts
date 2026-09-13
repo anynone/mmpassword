@@ -8,6 +8,7 @@ interface SettingsState {
   autoLockMinutes: number;
   clipboardClearSeconds: number;
   openLastVault: boolean;
+  checkForUpdates: boolean;
   lastVaultPath: string | null;
   lastGitVault: LastGitVault | null;
   /** Vaults whose tabs were open in the last session (for restore) */
@@ -23,6 +24,7 @@ interface SettingsState {
   setAutoLockMinutes: (minutes: number) => void;
   setClipboardClearSeconds: (seconds: number) => void;
   setOpenLastVault: (open: boolean) => void;
+  setCheckForUpdates: (check: boolean) => void;
   saveSettings: () => Promise<void>;
 }
 
@@ -33,6 +35,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   autoLockMinutes: 15,
   clipboardClearSeconds: 30,
   openLastVault: true,
+  checkForUpdates: true,
   lastVaultPath: null,
   lastGitVault: null,
   openVaults: [],
@@ -48,6 +51,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         autoLockMinutes: config.autoLockMinutes,
         clipboardClearSeconds: config.clipboardClearSeconds,
         openLastVault: config.openLastVault,
+        checkForUpdates: config.checkForUpdates ?? true,
         lastVaultPath: config.lastVaultPath ?? null,
         lastGitVault: config.lastGitVault ?? null,
         openVaults: config.openVaults ?? [],
@@ -83,6 +87,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     get().saveSettings();
   },
 
+  setCheckForUpdates: (checkForUpdates) => {
+    set({ checkForUpdates });
+    get().saveSettings();
+  },
+
   saveSettings: async () => {
     try {
       const state = get();
@@ -93,6 +102,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         autoLockMinutes: state.autoLockMinutes,
         clipboardClearSeconds: state.clipboardClearSeconds,
         openLastVault: state.openLastVault,
+        checkForUpdates: state.checkForUpdates,
         recentVaults: existing?.recentVaults ?? [],
         lastVaultPath: existing?.lastVaultPath,
         lastGitVault: existing?.lastGitVault,

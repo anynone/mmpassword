@@ -67,6 +67,9 @@ pub struct AppConfig {
     pub clipboard_clear_seconds: u32,
     /// Open last vault on startup
     pub open_last_vault: bool,
+    /// Check for application updates on startup (soft reminder only)
+    #[serde(default = "default_check_updates")]
+    pub check_for_updates: bool,
     /// Recent vaults list
     pub recent_vaults: Vec<VaultMeta>,
     /// Last opened local vault path
@@ -118,6 +121,10 @@ impl Default for WindowState {
     }
 }
 
+fn default_check_updates() -> bool {
+    true
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
@@ -126,6 +133,7 @@ impl Default for AppConfig {
             auto_lock_minutes: 15,
             clipboard_clear_seconds: 30,
             open_last_vault: true,
+            check_for_updates: true,
             recent_vaults: Vec::new(),
             last_vault_path: None,
             last_git_vault: None,
