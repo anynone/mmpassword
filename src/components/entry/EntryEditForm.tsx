@@ -39,17 +39,17 @@ interface FieldInput {
 }
 
 const fieldTypeOptions = [
-  { value: "text", label: "Text" },
-  { value: "password", label: "Password" },
-  { value: "email", label: "Email" },
-  { value: "url", label: "URL" },
-  { value: "notes", label: "Notes" },
-  { value: "username", label: "Username" },
+  { value: "text", labelKey: "entryForm.fieldType.text" },
+  { value: "password", labelKey: "entryForm.fieldType.password" },
+  { value: "email", labelKey: "entryForm.fieldType.email" },
+  { value: "url", labelKey: "entryForm.fieldType.url" },
+  { value: "notes", labelKey: "entryForm.fieldType.notes" },
+  { value: "username", labelKey: "entryForm.fieldType.username" },
 ]
 
 const entryTypeOptions = [
-  { value: "websiteLogin", label: "Website Login" },
-  { value: "secureNote", label: "Secure Note" },
+  { value: "websiteLogin", labelKey: "entryForm.entryType.websiteLogin" },
+  { value: "secureNote", labelKey: "entryForm.entryType.secureNote" },
 ]
 
 const defaultFields: FieldInput[] = [
@@ -186,7 +186,7 @@ export function EntryEditForm({
 
     try {
       if (!title.trim()) {
-        showToast("error", "Title is required")
+        showToast("error", t("entryDetail.titleRequired"))
         setIsSubmitting(false)
         return
       }
@@ -208,7 +208,7 @@ export function EntryEditForm({
           tags: [],
           favorite,
         })
-        showToast("success", "Entry updated successfully")
+        showToast("success", t("entryDetail.entryUpdated"))
       } else {
         await createEntry({
           title: title.trim(),
@@ -218,7 +218,7 @@ export function EntryEditForm({
           tags: [],
           favorite,
         })
-        showToast("success", "Entry created successfully")
+        showToast("success", t("entryDetail.entryCreated"))
       }
 
       onClose()
@@ -233,15 +233,15 @@ export function EntryEditForm({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode ? "Edit Entry" : "New Entry"}
+      title={isEditMode ? t("entryDetail.editEntry") : t("entryDetail.newEntry")}
       size="lg"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            {t("entryDetail.cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting || !title.trim()}>
-            {isEditMode ? "Save Changes" : "Create Entry"}
+            {isEditMode ? t("entryDetail.saveChanges") : t("entryDetail.createEntry")}
           </Button>
         </>
       }
@@ -250,26 +250,26 @@ export function EntryEditForm({
         {/* Basic Info */}
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-title">Title</Label>
+            <Label htmlFor="edit-title">{t("entryForm.title")}</Label>
             <Input
               id="edit-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Gmail Account"
+              placeholder={t("entryForm.titlePlaceholder")}
               required
             />
           </div>
 
           {!isEditMode && (
             <div className="space-y-2">
-              <Label>Entry Type</Label>
+              <Label>{t("entryForm.entryType")}</Label>
               <Select value={entryType} onValueChange={(v) => setEntryType(v as EntryType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {entryTypeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -277,13 +277,13 @@ export function EntryEditForm({
           )}
 
           <div className="space-y-2">
-            <Label>Group</Label>
+            <Label>{t("entryForm.group")}</Label>
             <Select value={groupId || "__none__"} onValueChange={(v) => setGroupId(v === "__none__" ? "" : v)}>
               <SelectTrigger>
-                <SelectValue placeholder="No group (root)" />
+                <SelectValue placeholder={t("entryForm.noGroup")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">No group (root)</SelectItem>
+                <SelectItem value="__none__">{t("entryForm.noGroup")}</SelectItem>
                 {groups.map((g) => (
                   <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
                 ))}
@@ -298,7 +298,7 @@ export function EntryEditForm({
               onCheckedChange={(checked) => setFavorite(checked === true)}
             />
             <Label htmlFor="edit-favorite" className="cursor-pointer text-sm font-normal">
-              Mark as favorite
+              {t("entryForm.markFavorite")}
             </Label>
           </div>
         </div>
@@ -307,7 +307,7 @@ export function EntryEditForm({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
-              Fields
+              {t("entryForm.fields")}
             </Label>
             <BulkAddFieldButton onAdd={addFields} />
           </div>
@@ -336,7 +336,7 @@ export function EntryEditForm({
                   <Input
                     value={field.name}
                     onChange={(e) => updateField(index, "name", e.target.value)}
-                    placeholder="Name"
+                    placeholder={t("entryForm.fieldNamePlaceholder")}
                   />
                 </div>
                 <div className="col-span-2">
@@ -349,7 +349,7 @@ export function EntryEditForm({
                     </SelectTrigger>
                     <SelectContent>
                       {fieldTypeOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -359,7 +359,7 @@ export function EntryEditForm({
                     type={field.fieldType === "password" ? "password" : "text"}
                     value={field.value}
                     onChange={(e) => updateField(index, "value", e.target.value)}
-                    placeholder="Value"
+                    placeholder={t("entryDetail.fieldValuePlaceholder")}
                     className={field.fieldType === "password" ? "pr-10" : ""}
                   />
                   {field.fieldType === "password" && (

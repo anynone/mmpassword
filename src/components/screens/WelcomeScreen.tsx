@@ -174,7 +174,7 @@ export function WelcomeScreen({
               {t("welcome.recentVaults")}
             </h3>
             {isLoading ? (
-              <div className="text-muted-foreground">Loading...</div>
+              <div className="text-muted-foreground">{t("welcome.loading")}</div>
             ) : recentVaults.length > 0 ? (
               <div className="space-y-2">
                 {recentVaults.slice(0, 3).map((vault) => (

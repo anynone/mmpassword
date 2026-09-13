@@ -10,6 +10,7 @@ import { MainScreen } from "./components/screens/MainScreen";
 import { NewVaultScreen } from "./components/screens/NewVaultScreen";
 import { ThemeProvider, ToastProvider } from "./components/common";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { useTranslation } from "./i18n";
 import { toVaultOpenTarget, type VaultOpenTarget } from "./types";
 
@@ -167,7 +168,7 @@ function App() {
       setCurrentScreen("main");
     } catch (error) {
       console.error("Failed to open Git vault:", error);
-      alert(`Failed to open vault: ${error}`);
+      toast.error(t("app.openVaultFailed", { error: String(error) }));
     } finally {
       setLoading({ isLoading: false, message: "" });
     }
@@ -192,7 +193,7 @@ function App() {
       setCurrentScreen("main");
     } catch (error) {
       console.error("Failed to create Git vault:", error);
-      alert(`Failed to create vault: ${error}`);
+      toast.error(t("app.createVaultFailed", { error: String(error) }));
     } finally {
       setLoading({ isLoading: false, message: "" });
     }

@@ -106,6 +106,49 @@ export const translations: Record<string, Record<string, string>> = {
     "entryDetail.fieldValuePlaceholder": "Value",
     "entryDetail.fieldNameRequired": "Please enter a field name, or delete the field.",
 
+    // Entry form (create/edit)
+    "entryForm.title": "Title",
+    "entryForm.titlePlaceholder": "e.g., Gmail Account",
+    "entryForm.entryType": "Entry Type",
+    "entryForm.entryType.websiteLogin": "Website Login",
+    "entryForm.entryType.secureNote": "Secure Note",
+    "entryForm.group": "Group",
+    "entryForm.noGroup": "No group (root)",
+    "entryForm.markFavorite": "Mark as favorite",
+    "entryForm.fields": "Fields",
+    "entryForm.fieldNamePlaceholder": "Name",
+    "entryForm.fieldType.text": "Text",
+    "entryForm.fieldType.password": "Password",
+    "entryForm.fieldType.email": "Email",
+    "entryForm.fieldType.url": "URL",
+    "entryForm.fieldType.notes": "Notes",
+    "entryForm.fieldType.username": "Username",
+
+    // Sync status panel
+    "sync.statusTitle": "Git Sync Status",
+    "sync.save": "Save",
+    "sync.sync": "Sync",
+    "sync.completed": "Sync completed",
+    "sync.statusFailed": "Sync failed",
+    "sync.entriesSummary": "{pulled} entries pulled, {pushed} entries pushed",
+    "sync.syncedCounts": "Synced! {pulled} pulled, {pushed} pushed",
+    "sync.savedToGit": "Vault saved to Git",
+    "sync.saveFailed": "Failed to save: {error}",
+
+    // Misc UI
+    "common.passwordStrength": "Password Strength",
+    "common.passwordStrengthTip": "Tip: Use at least 12 characters with mixed symbols and numbers.",
+    "welcome.loading": "Loading...",
+    "totp.copyFailed": "Failed to copy",
+    "app.openVaultFailed": "Failed to open vault: {error}",
+    "app.createVaultFailed": "Failed to create vault: {error}",
+    "gitVault.defaultVaultName": "My Vault",
+
+    // Password generator panel
+    "passwordGenerator.length": "Length",
+    "passwordGenerator.characters": "Characters",
+    "passwordGenerator.apply": "Apply",
+
     // StatusBar
     "statusBar.secure": "Status: Secure",
     "statusBar.unlocked": "Status: Unlocked",
@@ -403,6 +446,49 @@ export const translations: Record<string, Record<string, string>> = {
     "entryDetail.fieldNamePlaceholder": "输入字段名",
     "entryDetail.fieldValuePlaceholder": "值",
     "entryDetail.fieldNameRequired": "请填写字段名，或删除该字段。",
+
+    // 条目表单（新建/编辑）
+    "entryForm.title": "标题",
+    "entryForm.titlePlaceholder": "例如：Gmail 账户",
+    "entryForm.entryType": "条目类型",
+    "entryForm.entryType.websiteLogin": "网站登录",
+    "entryForm.entryType.secureNote": "安全笔记",
+    "entryForm.group": "分组",
+    "entryForm.noGroup": "无分组（根目录）",
+    "entryForm.markFavorite": "标记为收藏",
+    "entryForm.fields": "字段",
+    "entryForm.fieldNamePlaceholder": "名称",
+    "entryForm.fieldType.text": "文本",
+    "entryForm.fieldType.password": "密码",
+    "entryForm.fieldType.email": "邮箱",
+    "entryForm.fieldType.url": "URL",
+    "entryForm.fieldType.notes": "备注",
+    "entryForm.fieldType.username": "用户名",
+
+    // 同步状态面板
+    "sync.statusTitle": "Git 同步状态",
+    "sync.save": "保存",
+    "sync.sync": "同步",
+    "sync.completed": "同步完成",
+    "sync.statusFailed": "同步失败",
+    "sync.entriesSummary": "拉取 {pulled} 条，推送 {pushed} 条",
+    "sync.syncedCounts": "同步完成！拉取 {pulled} 条，推送 {pushed} 条",
+    "sync.savedToGit": "密码库已保存到 Git",
+    "sync.saveFailed": "保存失败：{error}",
+
+    // 杂项
+    "common.passwordStrength": "密码强度",
+    "common.passwordStrengthTip": "提示：请使用至少 12 个字符，并混合符号与数字。",
+    "welcome.loading": "加载中...",
+    "totp.copyFailed": "复制失败",
+    "app.openVaultFailed": "打开密码库失败：{error}",
+    "app.createVaultFailed": "创建密码库失败：{error}",
+    "gitVault.defaultVaultName": "我的密码库",
+
+    // 密码生成器面板
+    "passwordGenerator.length": "长度",
+    "passwordGenerator.characters": "字符类型",
+    "passwordGenerator.apply": "应用",
 
     // StatusBar
     "statusBar.secure": "状态：安全",

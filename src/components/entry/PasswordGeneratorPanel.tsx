@@ -4,6 +4,7 @@ import { RefreshCw, Check, ChevronUp, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { generatePasswordString } from "../../utils/passwordGenerator"
+import { useTranslation } from "../../i18n"
 import { DEFAULT_PASSWORD_OPTIONS, type PasswordOptions } from "../../types/common"
 
 interface PasswordGeneratorPanelProps {
@@ -13,6 +14,7 @@ interface PasswordGeneratorPanelProps {
 }
 
 export function PasswordGeneratorPanel({ triggerRef, onApply, onClose }: PasswordGeneratorPanelProps) {
+  const { t } = useTranslation()
   const [options, setOptions] = useState<PasswordOptions>(DEFAULT_PASSWORD_OPTIONS)
   const [password, setPassword] = useState("")
   const panelRef = useRef<HTMLDivElement>(null)
@@ -112,7 +114,7 @@ export function PasswordGeneratorPanel({ triggerRef, onApply, onClose }: Passwor
 
       {/* Length */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-muted-foreground">Length</span>
+        <span className="text-xs text-muted-foreground">{t("passwordGenerator.length")}</span>
         <div className="flex items-center gap-1">
           <Button
             type="button"
@@ -138,7 +140,7 @@ export function PasswordGeneratorPanel({ triggerRef, onApply, onClose }: Passwor
 
       {/* Character Types */}
       <div className="space-y-1.5 mb-3">
-        <span className="text-xs text-muted-foreground">Characters</span>
+        <span className="text-xs text-muted-foreground">{t("passwordGenerator.characters")}</span>
         <div className="grid grid-cols-2 gap-1.5">
           <label className="flex items-center gap-1.5 text-xs cursor-pointer">
             <Checkbox
@@ -179,7 +181,7 @@ export function PasswordGeneratorPanel({ triggerRef, onApply, onClose }: Passwor
         onClick={handleApply}
       >
         <Check className="h-3 w-3 mr-1" />
-        Apply
+        {t("passwordGenerator.apply")}
       </Button>
     </div>,
     document.body
