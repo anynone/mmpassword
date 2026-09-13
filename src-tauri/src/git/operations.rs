@@ -50,6 +50,15 @@ impl GitOperations {
         cmd
     }
 
+    /// Human-readable message for a failed git spawn
+    fn describe_spawn_error(e: &std::io::Error) -> String {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            "Git executable not found. Please install Git from https://git-scm.com and restart the app.".to_string()
+        } else {
+            format!("Command execution error: {}", e)
+        }
+    }
+
     /// Run a command asynchronously without blocking
     async fn run_command_async(program: &str, args: &[&str]) -> Result<std::process::Output> {
         let program = program.to_string();
@@ -60,13 +69,57 @@ impl GitOperations {
         })
             .await
             .map_err(|e| AppError::GitError(format!("Command join error: {}", e)))?
-            .map_err(|e| AppError::GitError(format!("Command execution error: {}", e)))?;
+            .map_err(|e| AppError::GitError(Self::describe_spawn_error(&e)))?;
         Ok(output)
+    }
+
+    /// Resolve the git executable path.
+    ///
+    /// GUI-launched processes may inherit a PATH that does not include Git,
+    /// so when plain "git" is not found we probe common Windows install locations.
+    fn resolve_git() -> String {
+        static GIT_PATH: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+        GIT_PATH.get_or_init(|| Self::probe_git()).clone()
+    }
+
+    fn probe_git() -> String {
+        if Self::create_command("git")
+            .arg("--version")
+            .output()
+            .is_ok()
+        {
+            return "git".to_string();
+        }
+
+        #[cfg(windows)]
+        {
+            const GIT_LOCATIONS: &[&str] = &[
+                r"C:\Program Files\Git\cmd\git.exe",
+                r"C:\Program Files (x86)\Git\cmd\git.exe",
+            ];
+            if let Some(home) = std::env::var_os("LOCALAPPDATA") {
+                let user_git = Path::new(&home)
+                    .join("Programs")
+                    .join("Git")
+                    .join("cmd")
+                    .join("git.exe");
+                if user_git.is_file() {
+                    return user_git.to_string_lossy().to_string();
+                }
+            }
+            for path in GIT_LOCATIONS {
+                if Path::new(path).is_file() {
+                    return (*path).to_string();
+                }
+            }
+        }
+
+        "git".to_string()
     }
 
     /// Create a git command with SSH environment configured
     fn git_command(&self) -> std::process::Command {
-        let mut cmd = Self::create_command("git");
+        let mut cmd = Self::create_command(&Self::resolve_git());
         if let Some(ref ssh_cmd) = self.ssh_command {
             cmd.env("GIT_SSH_COMMAND", ssh_cmd);
         }
@@ -83,7 +136,7 @@ impl GitOperations {
         })
             .await
             .map_err(|e| AppError::GitError(format!("Command join error: {}", e)))?
-            .map_err(|e| AppError::GitError(format!("Command execution error: {}", e)))?;
+            .map_err(|e| AppError::GitError(Self::describe_spawn_error(&e)))?;
 
         Ok(output)
     }
@@ -99,7 +152,7 @@ impl GitOperations {
         })
             .await
             .map_err(|e| AppError::GitError(format!("Command join error: {}", e)))?
-            .map_err(|e| AppError::GitError(format!("Command execution error: {}", e)))?;
+            .map_err(|e| AppError::GitError(Self::describe_spawn_error(&e)))?;
 
         Ok(output)
     }
