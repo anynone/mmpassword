@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react"
-import { ArrowLeft, ArrowRight } from "lucide-react"
-import { SshKeyConfig } from "./SshKeyConfig"
-import { RepoConfig } from "./RepoConfig"
+import { ArrowLeft } from "lucide-react"
+import { RepoConnect } from "./RepoConnect"
 import { GitVaultSelect } from "./GitVaultSelect"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/i18n"
 import type { GitRepoMeta } from "../../types/git"
 
-type SetupStep = "ssh" | "repo" | "vault"
+type SetupStep = "connect" | "vault"
 
 interface GitRepoSetupProps {
   onComplete: (repoUrl: string, branch: string, vaultPath: string, keyPath: string, password: string, isNew: boolean, name?: string) => void
@@ -15,8 +15,14 @@ interface GitRepoSetupProps {
   initialRepo?: GitRepoMeta | null
 }
 
+/**
+ * Two-step Git vault setup: one form for repo URL + branch + SSH key, then
+ * vault selection. Connection problems surface on the vault step (which
+ * clones the repo) and the back arrow returns to the form.
+ */
 export function GitRepoSetup({ onComplete, onBack, initialRepo }: GitRepoSetupProps) {
-  const [step, setStep] = useState<SetupStep>(initialRepo ? "vault" : "ssh")
+  const { t } = useTranslation()
+  const [step, setStep] = useState<SetupStep>(initialRepo ? "vault" : "connect")
   const [sshKeyPath, setSshKeyPath] = useState<string>(initialRepo?.keyPath || "")
   const [repoConfig, setRepoConfig] = useState<{ url: string; branch: string } | null>(
     initialRepo ? { url: initialRepo.repoUrl, branch: initialRepo.branch } : null
@@ -30,9 +36,8 @@ export function GitRepoSetup({ onComplete, onBack, initialRepo }: GitRepoSetupPr
     }
   }, [initialRepo])
 
-  const handleKeySelected = (keyPath: string) => setSshKeyPath(keyPath)
-
-  const handleRepoConfigured = (url: string, branch: string) => {
+  const handleConnect = (url: string, branch: string, keyPath: string) => {
+    setSshKeyPath(keyPath)
     setRepoConfig({ url, branch })
     setStep("vault")
   }
@@ -52,33 +57,22 @@ export function GitRepoSetup({ onComplete, onBack, initialRepo }: GitRepoSetupPr
           variant="ghost"
           size="icon"
           className="rounded-lg"
-          onClick={step === "vault" ? () => setStep("repo") : step === "repo" ? () => setStep("ssh") : onBack}
+          onClick={step === "vault" ? () => setStep("connect") : onBack}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h2 className="text-lg font-headline font-bold">
-          {step === "ssh" ? "SSH Key Setup" : step === "repo" ? "Repository Setup" : "Vault Setup"}
-        </h2>
+        <h2 className="text-lg font-headline font-bold">{t("gitSetup.title")}</h2>
         <div className="flex items-center gap-1">
-          {(["ssh", "repo", "vault"] as const).map((s) => (
+          {(["connect", "vault"] as const).map((s) => (
             <span key={s} className={cn("w-2 h-2 rounded-full", step === s ? "bg-primary" : "bg-border")} />
           ))}
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {step === "ssh" && (
-          <div className="space-y-4">
-            <SshKeyConfig onKeySelected={handleKeySelected} selectedKey={sshKeyPath} />
-            {sshKeyPath && (
-              <Button onClick={() => setStep("repo")} className="w-full">
-                <ArrowRight className="h-4 w-4 mr-2" />
-                Continue to Repository Setup
-              </Button>
-            )}
-          </div>
+        {step === "connect" && (
+          <RepoConnect onConnect={handleConnect} />
         )}
-        {step === "repo" && <RepoConfig sshKeyPath={sshKeyPath} onConfigured={handleRepoConfigured} />}
         {step === "vault" && repoConfig && (
           <GitVaultSelect
             repoUrl={repoConfig.url}
