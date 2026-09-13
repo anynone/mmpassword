@@ -99,7 +99,7 @@ export function TotpCard({ entry, onEntryUpdated }: TotpCardProps) {
         await writeText("")
       }, clipboardClearSeconds * 1000)
     } catch {
-      showToast("error", "Failed to copy")
+      showToast("error", t("totp.copyFailed"))
     }
   }
 

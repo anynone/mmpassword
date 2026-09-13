@@ -2,6 +2,7 @@ import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { RefreshCw, Upload, CheckCircle, XCircle, Loader2 } from "lucide-react"
 import { useToast } from "../common/Toast"
+import { useTranslation } from "../../i18n"
 import { useVaultStore } from "../../stores/vaultStore"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -13,6 +14,7 @@ interface SyncStatusProps {
 
 export function SyncStatus({ onSync }: SyncStatusProps) {
   const { showToast } = useToast()
+  const { t } = useTranslation()
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<GitSyncResult | null>(null)
 
@@ -24,13 +26,13 @@ export function SyncStatus({ onSync }: SyncStatusProps) {
       const result = await invoke<GitSyncResult>("sync_git_vault", { vaultId, password: "" })
       setSyncResult(result)
       if (result.success) {
-        showToast("success", `Synced! ${result.entriesPulled} pulled, ${result.entriesPushed} pushed`)
+        showToast("success", t("sync.syncedCounts", { pulled: result.entriesPulled, pushed: result.entriesPushed }))
         onSync?.()
       } else {
-        showToast("error", result.error || "Sync failed")
+        showToast("error", result.error || t("sync.statusFailed"))
       }
     } catch (error) {
-      showToast("error", `Sync failed: ${error}`)
+      showToast("error", t("sync.failed", { error: String(error) }))
     } finally {
       setIsSyncing(false)
     }
@@ -42,10 +44,10 @@ export function SyncStatus({ onSync }: SyncStatusProps) {
     setIsSyncing(true)
     try {
       await invoke<string>("save_git_vault", { vaultId, commitMessage: "Update vault" })
-      showToast("success", "Vault saved to Git")
+      showToast("success", t("sync.savedToGit"))
       onSync?.()
     } catch (error) {
-      showToast("error", `Failed to save: ${error}`)
+      showToast("error", t("sync.saveFailed", { error: String(error) }))
     } finally {
       setIsSyncing(false)
     }
@@ -55,17 +57,17 @@ export function SyncStatus({ onSync }: SyncStatusProps) {
     <div className="space-y-4">
       <h3 className="text-lg font-headline font-bold flex items-center gap-2">
         <RefreshCw className="h-5 w-5 text-primary" />
-        Git Sync Status
+        {t("sync.statusTitle")}
       </h3>
 
       <div className="flex gap-2">
         <Button onClick={handleSave} disabled={isSyncing} variant="secondary" className="flex-1">
           {isSyncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-          Save
+          {t("sync.save")}
         </Button>
         <Button onClick={handleSync} disabled={isSyncing} className="flex-1">
           {isSyncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-          Sync
+          {t("sync.sync")}
         </Button>
       </div>
 
@@ -79,11 +81,11 @@ export function SyncStatus({ onSync }: SyncStatusProps) {
             )}
             <div className="flex-1">
               <p className={cn("text-sm font-medium", syncResult.success ? "text-primary" : "text-destructive")}>
-                {syncResult.success ? "Sync completed" : "Sync failed"}
+                {syncResult.success ? t("sync.completed") : t("sync.statusFailed")}
               </p>
               {syncResult.success && (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {syncResult.entriesPulled} entries pulled, {syncResult.entriesPushed} entries pushed
+                  {t("sync.entriesSummary", { pulled: syncResult.entriesPulled, pushed: syncResult.entriesPushed })}
                 </p>
               )}
               {syncResult.error && <p className="text-xs text-destructive mt-0.5">{syncResult.error}</p>}

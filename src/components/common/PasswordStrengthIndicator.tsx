@@ -1,10 +1,13 @@
 import { cn } from "@/lib/utils"
+import { useTranslation } from "../../i18n"
 
 interface PasswordStrengthIndicatorProps {
   password: string
 }
 
 export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicatorProps) {
+  const { t } = useTranslation()
+
   const getStrength = () => {
     let strength = 0
     if (password.length >= 8) strength += 20
@@ -16,16 +19,16 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
     return Math.min(100, strength)
   }
 
-  const getLabel = () => {
+  const getStrengthKey = () => {
     const strength = getStrength()
-    if (strength < 40) return "Weak"
-    if (strength < 70) return "Medium"
-    if (strength < 90) return "Strong"
-    return "Very Strong"
+    if (strength < 40) return "newVault.strength.weak"
+    if (strength < 70) return "newVault.strength.medium"
+    if (strength < 90) return "newVault.strength.strong"
+    return "newVault.strength.veryStrong"
   }
 
   const strength = getStrength()
-  const label = getLabel()
+  const label = t(getStrengthKey())
 
   if (!password) return null
 
@@ -33,7 +36,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
     <div className="pt-2 space-y-2">
       <div className="flex justify-between items-center px-1">
         <span className="text-xs font-medium text-muted-foreground">
-          Password Strength
+          {t("common.passwordStrength")}
         </span>
         <span
           className={cn(
@@ -60,7 +63,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
         ))}
       </div>
       <p className="text-[10px] text-muted-foreground italic px-1">
-        Tip: Use at least 12 characters with mixed symbols and numbers.
+        {t("common.passwordStrengthTip")}
       </p>
     </div>
   )

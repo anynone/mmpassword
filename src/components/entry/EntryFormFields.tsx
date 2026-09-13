@@ -14,20 +14,21 @@ import {
 import { PasswordStrengthIndicator } from "../common/PasswordStrengthIndicator"
 import { PasswordGeneratorPanel } from "./PasswordGeneratorPanel"
 import { useVaultStore, type EntryFormData, type FieldInput } from "../../stores/vaultStore"
+import { useTranslation } from "../../i18n"
 import type { FieldType, EntryType } from "../../types"
 
 const fieldTypeOptions = [
-  { value: "text", label: "Text" },
-  { value: "password", label: "Password" },
-  { value: "email", label: "Email" },
-  { value: "url", label: "URL" },
-  { value: "notes", label: "Notes" },
-  { value: "username", label: "Username" },
+  { value: "text", labelKey: "entryForm.fieldType.text" },
+  { value: "password", labelKey: "entryForm.fieldType.password" },
+  { value: "email", labelKey: "entryForm.fieldType.email" },
+  { value: "url", labelKey: "entryForm.fieldType.url" },
+  { value: "notes", labelKey: "entryForm.fieldType.notes" },
+  { value: "username", labelKey: "entryForm.fieldType.username" },
 ]
 
 const entryTypeOptions = [
-  { value: "websiteLogin", label: "Website Login" },
-  { value: "secureNote", label: "Secure Note" },
+  { value: "websiteLogin", labelKey: "entryForm.entryType.websiteLogin" },
+  { value: "secureNote", labelKey: "entryForm.entryType.secureNote" },
 ]
 
 interface EntryFormFieldsProps {
@@ -39,6 +40,7 @@ interface EntryFormFieldsProps {
 
 export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }: EntryFormFieldsProps) {
   const groups = useVaultStore((s) => s.groups)
+  const { t } = useTranslation()
   const [generatorIndex, setGeneratorIndex] = useState<number | null>(null)
   const generatorBtnRefs = useRef<Record<number, HTMLButtonElement | null>>({})
 
@@ -62,12 +64,12 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
       {/* Basic Info */}
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="entry-title">Title</Label>
+          <Label htmlFor="entry-title">{t("entryForm.title")}</Label>
           <Input
             id="entry-title"
             value={data.title}
             onChange={(e) => onChange({ title: e.target.value })}
-            placeholder="e.g., Gmail Account"
+            placeholder={t("entryForm.titlePlaceholder")}
             required
             disabled={isSubmitting}
           />
@@ -75,7 +77,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
 
         {showEntryType && (
           <div className="space-y-2">
-            <Label>Entry Type</Label>
+            <Label>{t("entryForm.entryType")}</Label>
             <Select
               value={data.entryType}
               onValueChange={(value) => onChange({ entryType: value as EntryType })}
@@ -85,7 +87,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
               </SelectTrigger>
               <SelectContent>
                 {entryTypeOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -93,16 +95,16 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
         )}
 
         <div className="space-y-2">
-          <Label>Group</Label>
+          <Label>{t("entryForm.group")}</Label>
           <Select
             value={data.groupId || "__none__"}
             onValueChange={(value) => onChange({ groupId: value === "__none__" ? "" : value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="No group (root)" />
+              <SelectValue placeholder={t("entryForm.noGroup")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none__">No group (root)</SelectItem>
+              <SelectItem value="__none__">{t("entryForm.noGroup")}</SelectItem>
               {groups.map((g) => (
                 <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
               ))}
@@ -117,7 +119,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
             onCheckedChange={(checked) => onChange({ favorite: checked === true })}
           />
           <Label htmlFor="entry-favorite" className="cursor-pointer text-sm font-normal">
-            Mark as favorite
+            {t("entryForm.markFavorite")}
           </Label>
         </div>
       </div>
@@ -126,7 +128,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
-            Fields
+            {t("entryForm.fields")}
           </Label>
           <Button
             type="button"
@@ -135,7 +137,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
             onClick={addField}
           >
             <Plus className="h-4 w-4 mr-1" />
-            Add Field
+            {t("entryDetail.addField")}
           </Button>
         </div>
 
@@ -146,7 +148,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
                 <Input
                   value={field.name}
                   onChange={(e) => updateField(index, "name", e.target.value)}
-                  placeholder="Name"
+                  placeholder={t("entryForm.fieldNamePlaceholder")}
                 />
               </div>
               <div className="col-span-2">
@@ -159,7 +161,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
                   </SelectTrigger>
                   <SelectContent>
                     {fieldTypeOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -169,7 +171,7 @@ export function EntryFormFields({ data, onChange, showEntryType, isSubmitting }:
                   type={field.fieldType === "password" ? "password" : "text"}
                   value={field.value}
                   onChange={(e) => updateField(index, "value", e.target.value)}
-                  placeholder="Value"
+                  placeholder={t("entryDetail.fieldValuePlaceholder")}
                   className={field.fieldType === "password" ? "pr-10" : ""}
                 />
                 {field.fieldType === "password" && (

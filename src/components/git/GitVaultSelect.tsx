@@ -23,7 +23,7 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
   const [selectedVault, setSelectedVault] = useState<string | null>(null)
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [vaultName, setVaultName] = useState("My Vault")
+  const [vaultName, setVaultName] = useState(t("gitVault.defaultVaultName"))
   const [customVaultPath, setCustomVaultPath] = useState("vault")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -174,7 +174,7 @@ export function GitVaultSelect({ repoUrl, branch, keyPath, onOpenVault, onCreate
                   type="text"
                   value={vaultName}
                   onChange={(e) => setVaultName(e.target.value)}
-                  placeholder="My Vault"
+                    placeholder={t("gitVault.defaultVaultName")}
                   className="w-full mt-1 px-3 py-2 bg-card rounded-lg text-sm border focus:border-primary focus:outline-none"
                 />
                 <p className="text-xs text-muted-foreground mt-1">{t("gitVault.vaultNameHint")}</p>
