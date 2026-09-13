@@ -17,8 +17,8 @@ interface GitRepoSetupModalProps {
 }
 
 /**
- * Modal wrapper around the three-step GitRepoSetup wizard
- * (SSH key → repository → vault). Reused by the welcome screen and by the
+ * Modal wrapper around the two-step GitRepoSetup flow
+ * (connect form → vault selection). Reused by the welcome screen and by the
  * "add vault" flow in the main screen.
  */
 export function GitRepoSetupModal({
