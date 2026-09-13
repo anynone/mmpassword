@@ -8,7 +8,7 @@ import { WelcomeScreen } from "./components/screens/WelcomeScreen";
 import { UnlockScreen, type PendingVault } from "./components/screens/UnlockScreen";
 import { MainScreen } from "./components/screens/MainScreen";
 import { NewVaultScreen } from "./components/screens/NewVaultScreen";
-import { ThemeProvider, ToastProvider } from "./components/common";
+import { ThemeProvider, ToastProvider, UpdateBanner } from "./components/common";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { useTranslation } from "./i18n";
@@ -239,6 +239,7 @@ function App() {
 
         {/* Global Loading Overlay */}
         <LoadingOverlay loading={loading} />
+        <UpdateBanner />
         <Toaster richColors position="bottom-right" />
       </ToastProvider>
     </ThemeProvider>

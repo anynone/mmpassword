@@ -5,3 +5,4 @@ export { ToastProvider, useToast } from "./Toast";
 export { PasswordStrengthIndicator } from "./PasswordStrengthIndicator";
 export { EmptyState } from "./EmptyState";
 export { Toggle } from "./Toggle";
+export { UpdateBanner } from "./UpdateBanner";

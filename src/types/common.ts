@@ -48,6 +48,7 @@ export interface AppConfig {
   autoLockMinutes: number;
   clipboardClearSeconds: number;
   openLastVault: boolean;
+  checkForUpdates?: boolean;
   recentVaults: VaultMeta[];
   lastVaultPath?: string;
   lastGitVault?: LastGitVault;
